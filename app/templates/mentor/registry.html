@@ -1,0 +1,214 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, status_chip, banner, empty, field_errors, level_select %}
+{% block title %}Expertise registry — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Registry</p>
+  <h1 class="page-head__title">Expertise registry</h1>
+  <p class="page-head__sub">
+    Capacity values are validated: levels 1–5, caps above zero, and unavailable ranges that end
+    after they start. Free-text expertise alone is never used for matching.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if saved == 'registry' %}{{ banner("Registry saved", "Your capacity and expertise are updated. Existing assignments were not changed.", "ok") }}{% endif %}
+{% if saved == 'skill' %}{{ banner("Skill tag saved", "The level and evidence basis are recorded against this skill.", "ok") }}{% endif %}
+{% if saved == 'unavailable' %}{{ banner("Unavailable window added", "Proposed slots will avoid these dates.", "ok") }}{% endif %}
+{% if request.query_params.get('error') %}{{ banner("Could not save", "Check the values in that section and try again.", "risk") }}{% endif %}
+{% if error %}{{ banner("Check the highlighted fields", error, "risk") }}{% endif %}
+
+<div class="grid grid--split">
+
+  <form method="post" action="/mentor/registry" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <section class="card" aria-labelledby="capacity-heading">
+      <h2 class="card__title" id="capacity-heading">Capacity</h2>
+      <p class="card__sub">Used by the hard capacity filter before any ranking.</p>
+
+      <div class="grid grid--3" style="margin-top:24px">
+        <div class="field">
+          <label class="field__label" for="max_active_projects">Max active projects</label>
+          <input class="input" type="number" id="max_active_projects" name="max_active_projects"
+                 min="1" max="20" value="{{ mentor.max_active_projects }}">
+          {{ field_errors(errors, 'max_active_projects') }}
+        </div>
+        <div class="field">
+          <label class="field__label" for="weekly_hours_cap">Weekly hours cap</label>
+          <input class="input" type="number" id="weekly_hours_cap" name="weekly_hours_cap"
+                 min="1" max="60" value="{{ mentor.weekly_hours_cap }}">
+          {{ field_errors(errors, 'weekly_hours_cap') }}
+        </div>
+        <div class="field">
+          <label class="field__label" for="hours_per_project">Hours per project</label>
+          <input class="input" type="number" id="hours_per_project" name="hours_per_project"
+                 min="0" max="40" value="{{ mentor.hours_per_project if mentor.hours_per_project is not none else '' }}">
+          {{ field_errors(errors, 'hours_per_project') }}
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:24px" aria-labelledby="expertise-heading">
+      <h2 class="card__title" id="expertise-heading">Domain and experience</h2>
+
+      <div class="field" style="margin-top:24px">
+        <label class="field__label" for="domains">Domains</label>
+        <input class="input" type="text" id="domains" name="domains" value="{{ mentor.domains }}"
+               placeholder="Energy systems, data platforms">
+        <span class="field__help">Comma-separated. Used for the domain-fit component only.</span>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="experience">Relevant projects, experience or publications</label>
+        <textarea class="textarea" id="experience" name="experience" rows="3">{{ mentor.experience }}</textarea>
+      </div>
+
+      <div class="grid grid--3">
+        <div class="field">
+          <label class="field__label" for="mentoring_experience_years">Years mentoring</label>
+          <input class="input" type="number" id="mentoring_experience_years" name="mentoring_experience_years"
+                 min="0" max="60" value="{{ mentor.mentoring_experience_years if mentor.mentoring_experience_years is not none else '' }}">
+          {{ field_errors(errors, 'mentoring_experience_years') }}
+        </div>
+        <div class="field">
+          <label class="field__label" for="mentoring_projects_count">Projects mentored</label>
+          <input class="input" type="number" id="mentoring_projects_count" name="mentoring_projects_count"
+                 min="0" max="500" value="{{ mentor.mentoring_projects_count if mentor.mentoring_projects_count is not none else '' }}">
+          {{ field_errors(errors, 'mentoring_projects_count') }}
+        </div>
+        <div class="field">
+          <label class="field__label" for="preferred_levels">Preferred student levels</label>
+          <input class="input" type="text" id="preferred_levels" name="preferred_levels"
+                 value="{{ mentor.preferred_levels }}" maxlength="60" placeholder="2-4">
+        </div>
+      </div>
+    </section>
+
+    <div class="cluster" style="margin-top:24px">
+      <button class="btn btn--primary" type="submit">Save registry</button>
+    </div>
+  </form>
+
+  <aside class="stack-lg">
+    <section class="card">
+      <div class="card__head">
+        <div>
+          <h2 class="card__title">Current utilization</h2>
+          <p class="card__sub">Hours, not project count alone.</p>
+        </div>
+        {{ status_chip(workload.label, workload.tone) }}
+      </div>
+      <p class="figure figure--md" style="margin:8px 0 0">{{ workload.utilization_pct }}%</p>
+      <p class="small muted" style="margin:4px 0 0">
+        {{ workload.hours_per_week }} / {{ workload.weekly_cap }} hours · {{ workload.active_projects }} confirmed
+      </p>
+    </section>
+
+    <section class="card">
+      <h2 class="card__title">Unavailable dates</h2>
+      {% if unavailable %}
+      <ul class="small" style="margin:16px 0;padding-left:18px">
+        {% for row in unavailable %}
+        <li>{{ row.from_date|datefmt }} – {{ row.to_date|datefmt }}{% if row.reason %} · {{ row.reason }}{% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="small muted" style="margin:12px 0 16px">No unavailable windows yet.</p>
+      {% endif %}
+
+      <form method="post" action="/mentor/registry/unavailability">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="field-row">
+          <div class="field" style="margin-bottom:12px">
+            <label class="field__label" for="from_date">From</label>
+            <input class="input" type="date" id="from_date" name="from_date" required>
+          </div>
+          <div class="field" style="margin-bottom:12px">
+            <label class="field__label" for="to_date">To</label>
+            <input class="input" type="date" id="to_date" name="to_date" required>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="reason">Reason</label>
+          <input class="input" type="text" id="reason" name="reason" maxlength="200" placeholder="Conference, leave">
+        </div>
+        <button class="btn btn--secondary btn--sm" type="submit">Add window</button>
+      </form>
+    </section>
+  </aside>
+</div>
+
+<section class="card" style="margin-top:24px" aria-labelledby="skills-heading">
+  <div class="card__head">
+    <div>
+      <h2 class="card__title" id="skills-heading">Skill tags</h2>
+      <p class="card__sub">Each tag carries a level and the basis for it. Level 1–5 only.</p>
+    </div>
+  </div>
+
+  {% if entries %}
+  <div class="table-wrap" style="margin-bottom:24px">
+    <table class="data">
+      <caption class="visually-hidden">Your registered skill tags</caption>
+      <thead>
+        <tr>
+          <th scope="col">Skill</th>
+          <th scope="col" class="num">Level</th>
+          <th scope="col">Evidence basis</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for skill_id, entry in entries.items() %}
+        <tr>
+          <td><strong>{{ registry.name_of(skill_id) }}</strong></td>
+          <td class="num">{{ entry.level }}</td>
+          <td class="small muted">{{ entry.evidence_basis or '—' }}</td>
+          <td style="text-align:right">
+            <form method="post" action="/mentor/registry/skills">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="skill_id" value="{{ skill_id }}">
+              <input type="hidden" name="level" value="remove">
+              <button class="btn btn--quiet btn--sm" type="submit">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    {{ empty("No skill tags yet", "Add structured tags below. A mentor without a tag cannot be matched on that skill.", "", "", "book") }}
+  {% endif %}
+
+  <form method="post" action="/mentor/registry/skills" class="panel">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="grid grid--4" style="align-items:end">
+      <div class="field" style="margin-bottom:0;grid-column:span 1">
+        <label class="field__label" for="skill_id">Skill</label>
+        <select class="select" id="skill_id" name="skill_id">
+          <option value="">Choose a skill</option>
+          {% for skill in registry.items %}
+          <option value="{{ skill.id }}">{{ skill.canonical_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label class="field__label" for="f-level">Level</label>
+        {{ level_select("level", "", False) }}
+      </div>
+      <div class="field" style="margin-bottom:0;grid-column:span 2">
+        <label class="field__label" for="evidence_basis">Evidence basis</label>
+        <input class="input" type="text" id="evidence_basis" name="evidence_basis" maxlength="300"
+               placeholder="Taught the module, published in the area">
+      </div>
+    </div>
+    <div style="margin-top:16px">
+      <button class="btn btn--primary btn--sm" type="submit">Add or update tag</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

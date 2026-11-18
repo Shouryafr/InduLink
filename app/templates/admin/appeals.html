@@ -1,0 +1,74 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty %}
+{% block title %}Appeals — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Assurance</p>
+  <h1 class="page-head__title">Appeals</h1>
+  <p class="page-head__sub">
+    A student asking for a contribution record to be reviewed. Closing an appeal needs a written
+    resolution, and the decision is audited.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if saved == 'resolved' %}{{ banner("Appeal updated", "The student can read the decision on their appeals page.", "ok") }}{% endif %}
+{% if error %}{{ banner("That decision did not save", error, "risk") }}{% endif %}
+
+<form method="get" action="/admin/appeals" class="table-toolbar">
+  <label class="visually-hidden" for="status-filter">Filter by status</label>
+  <select class="select" id="status-filter" name="status" style="max-width:220px">
+    <option value="">All statuses</option>
+    {% for value in ["open", "under_review", "resolved", "withdrawn"] %}
+    <option value="{{ value }}" {% if filter_status == value %}selected{% endif %}>{{ value|replace('_',' ')|title }}</option>
+    {% endfor %}
+  </select>
+  <button class="btn btn--secondary btn--sm" type="submit">Filter</button>
+</form>
+
+{% if appeals %}
+<div class="stack" style="max-width:none">
+  {% for appeal in appeals %}
+  <section class="card" style="margin-top:0">
+    <div class="split" style="align-items:flex-start;gap:20px">
+      <div style="max-width:58ch">
+        <div class="cluster" style="margin-bottom:6px">
+          {% set tones = {"open": "warn", "under_review": "info", "resolved": "ok", "withdrawn": "unknown"} %}
+          {{ status_chip(appeal.status|replace('_',' ')|title, tones.get(appeal.status, "unknown")) }}
+          <span class="small muted">Appeal {{ appeal.id }} · {{ appeal.created_at|dtfmt }}</span>
+        </div>
+        <p style="margin:0 0 6px">
+          <strong>{{ appeal.student.user.display_name if appeal.student and appeal.student.user else 'Student ' ~ appeal.student_id }}</strong>
+        </p>
+        <p class="small" style="margin:0;white-space:pre-line">{{ appeal.statement }}</p>
+        {% if appeal.resolution %}
+        <p class="small muted" style="margin:10px 0 0">Resolution: {{ appeal.resolution }}</p>
+        {% endif %}
+      </div>
+
+      <form method="post" action="/admin/appeals/{{ appeal.id }}" style="flex:0 0 260px">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="field">
+          <label class="field__label" for="status-{{ appeal.id }}">Decision</label>
+          <select class="select" id="status-{{ appeal.id }}" name="status">
+            {% for value in ["open", "under_review", "resolved", "withdrawn"] %}
+            <option value="{{ value }}" {% if appeal.status == value %}selected{% endif %}>{{ value|replace('_',' ')|title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field__label" for="resolution-{{ appeal.id }}">Resolution</label>
+          <textarea class="textarea" id="resolution-{{ appeal.id }}" name="resolution" rows="3" placeholder="Required to close"></textarea>
+        </div>
+        <button class="btn btn--primary btn--sm" type="submit">Save decision</button>
+      </form>
+    </div>
+  </section>
+  {% endfor %}
+</div>
+{% else %}
+  {{ empty("No appeals", "Nothing has been appealed. Students can submit one from their workspace.", "", "", "alert-triangle") }}
+{% endif %}
+{% endblock %}

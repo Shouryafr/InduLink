@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% from "components/macros.html" import icon %}
+{% block title %}Create an account — InduLink{% endblock %}
+{% block styles %}<link rel="stylesheet" href="/static/css/landing.css?v={{ asset_v }}">{% endblock %}
+
+{% block chrome %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="auth">
+  <aside class="auth__aside">
+    <a class="wordmark" href="/">
+      <svg class="wordmark__mark" aria-hidden="true" focusable="false"><use href="#i-mark"></use></svg>
+      InduLink<span class="wordmark__dot">.</span>
+    </a>
+    <div>
+      <h1>Two numbers, never one.</h1>
+      <blockquote>
+        “Unknown proficiency is never treated as zero.”
+        <cite>Evidence policy, applied everywhere</cite>
+      </blockquote>
+    </div>
+    <p class="small muted" style="margin:0">Synthetic demo data. Real-world effectiveness is not claimed.</p>
+  </aside>
+
+  <div class="auth__main">
+    <div class="auth__card">
+      <a class="wordmark" href="/" style="margin-bottom:32px">
+        <svg class="wordmark__mark" aria-hidden="true" focusable="false"><use href="#i-mark"></use></svg>
+        InduLink<span class="wordmark__dot">.</span>
+      </a>
+
+      <h2>Create an account</h2>
+      <p class="auth__sub">Administrator accounts are created by an existing administrator.</p>
+
+      {% if error %}
+      <div class="banner banner--risk" role="alert">
+        <svg class="banner__icon" aria-hidden="true"><use href="#i-alert-octagon"></use></svg>
+        <div><p class="banner__text">{{ error }}</p></div>
+      </div>
+      {% endif %}
+
+      <form method="post" action="/register" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <fieldset>
+          <legend>I am joining as</legend>
+          <div class="cluster cluster-sm" style="gap:8px">
+            {% for value, label in [('student', 'A student'), ('industry', 'An industry partner'), ('mentor', 'A mentor')] %}
+            <label class="check" for="role-{{ value }}" style="border:1px solid var(--line-strong);border-radius:10px;padding:8px 12px">
+              <input type="radio" id="role-{{ value }}" name="role" value="{{ value }}" {% if form_role == value %}checked{% endif %}>
+              <span>{{ label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </fieldset>
+
+        <div class="field">
+          <label class="field__label" for="display_name">Display name</label>
+          <input class="input" type="text" id="display_name" name="display_name"
+                 value="{{ form.display_name or '' }}" required autocomplete="name" maxlength="160"
+                 {% if errors and errors.get('display_name') %}aria-invalid="true"{% endif %}>
+          {% if errors and errors.get('display_name') %}
+          <span class="field__error">{{ icon("alert-octagon", "btn__icon") }}{{ errors.get('display_name')[0] }}</span>
+          {% endif %}
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="email">E-mail address</label>
+          <input class="input" type="email" id="email" name="email" value="{{ form.email or '' }}"
+                 required autocomplete="email" {% if errors and errors.get('email') %}aria-invalid="true"{% endif %}>
+          {% if errors and errors.get('email') %}
+          <span class="field__error">{{ icon("alert-octagon", "btn__icon") }}{{ errors.get('email')[0] }}</span>
+          {% endif %}
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label" for="password">Password</label>
+            <input class="input" type="password" id="password" name="password" required
+                   autocomplete="new-password" minlength="10"
+                   {% if errors and errors.get('password') %}aria-invalid="true"{% endif %}>
+            <span class="field__help">At least 10 characters.</span>
+            {% if errors and errors.get('password') %}
+            <span class="field__error">{{ icon("alert-octagon", "btn__icon") }}{{ errors.get('password')[0] }}</span>
+            {% endif %}
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="confirm_password">Confirm password</label>
+            <input class="input" type="password" id="confirm_password" name="confirm_password" required
+                   autocomplete="new-password"
+                   {% if errors and errors.get('confirm_password') %}aria-invalid="true"{% endif %}>
+            {% if errors and errors.get('confirm_password') %}
+            <span class="field__error">{{ icon("alert-octagon", "btn__icon") }}{{ errors.get('confirm_password')[0] }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <label class="check" for="accepted_terms" style="margin-bottom:24px">
+          <input type="checkbox" id="accepted_terms" name="accepted_terms" value="yes">
+          <span>
+            I accept the <a href="/terms">terms</a> and the
+            <a href="/privacy">privacy notice</a>, and I understand this prototype uses
+            synthetic data only.
+          </span>
+        </label>
+        {% if errors and errors.get('accepted_terms') %}
+        <span class="field__error" style="margin-top:-16px;margin-bottom:16px;display:flex">
+          {{ icon("alert-octagon", "btn__icon") }}{{ errors.get('accepted_terms')[0] }}
+        </span>
+        {% endif %}
+
+        <button class="btn btn--primary btn--block" type="submit">Create account</button>
+      </form>
+
+      <p class="auth__alt">Already have an account? <a href="/sign-in">Sign in</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

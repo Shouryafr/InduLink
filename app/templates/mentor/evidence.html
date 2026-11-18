@@ -1,0 +1,109 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty, level_select %}
+{% block title %}Evidence review — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Review</p>
+  <h1 class="page-head__title">Evidence review</h1>
+  <p class="page-head__sub">
+    A decision needs a note and, for anything other than a rejection, the level you could confirm.
+    You cannot review your own evidence.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if saved == 'reviewed' %}{{ banner("Decision recorded", "The student sees the assessed level and your note. The decision is in the audit log.", "ok") }}{% endif %}
+{% if request.query_params.get('error') %}{{ banner("Could not record that decision", "A note of at least five characters and a level are required for reviewed or verified decisions.", "risk") }}{% endif %}
+
+<div class="cluster" style="margin-bottom:24px" role="tablist" aria-label="Queue filter">
+  <a class="btn {{ 'btn--primary' if tab == 'open' else 'btn--secondary' }} btn--sm" href="/mentor/evidence?status=open" role="tab" aria-selected="{{ 'true' if tab == 'open' else 'false' }}">Awaiting review</a>
+  <a class="btn {{ 'btn--primary' if tab == 'mine' else 'btn--secondary' }} btn--sm" href="/mentor/evidence?status=mine" role="tab" aria-selected="{{ 'true' if tab == 'mine' else 'false' }}">My decisions</a>
+</div>
+
+{% if items %}
+<ul class="stack-lg" style="list-style:none;padding:0;margin:0;max-width:none">
+  {% for item in items %}
+  <li class="card">
+    <div class="split" style="align-items:flex-start;margin-bottom:12px">
+      <div>
+        <p style="margin:0 0 2px;font-weight:600">{{ item.skill_name }}</p>
+        <p class="small muted" style="margin:0">
+          {{ item.student_name }} · {{ item.category_label }} · {{ item.evidence_date|datefmt }}
+          {% if item.demonstrated_level %} · claimed level {{ item.demonstrated_level }}{% endif %}
+        </p>
+      </div>
+      <div class="cluster cluster-sm">
+        {% if item.status in ['reviewed', 'verified'] %}
+          {{ status_chip(item.status_label, 'ok') }}
+        {% elif item.status == 'rejected' %}
+          {{ status_chip(item.status_label, 'risk') }}
+        {% else %}
+          {{ status_chip(item.status_label, 'warn') }}
+        {% endif %}
+        <span class="chip{% if item.age_tone == 'warn' %} chip--warn{% endif %}">
+          {{ icon("clock", "chip__icon") }}{{ item.age_label }}
+        </span>
+      </div>
+    </div>
+
+    <p class="small" style="margin:0 0 4px"><span class="muted">Source:</span> {{ item.source }}</p>
+    {% if item.expired %}
+      <p class="small" style="margin:0;color:var(--risk)">Certification expired {{ item.expiry_date|datefmt }}.</p>
+    {% endif %}
+
+    {% if item.own_item %}
+      <div class="constraint-banner" style="margin-top:16px;margin-bottom:0">
+        <svg class="constraint-banner__icon" aria-hidden="true"><use href="#i-alert-octagon"></use></svg>
+        <div>
+          <p class="constraint-banner__title">This is your own evidence</p>
+          <p class="constraint-banner__body">A reviewer cannot review their own submission. It is shown for context only.</p>
+        </div>
+      </div>
+    {% elif item.status in ['submitted', 'under_review'] %}
+      <details class="why" style="margin-top:16px">
+        <summary>Record a decision</summary>
+        <div class="why__body">
+          <form method="post" action="/mentor/evidence/{{ item.id }}/review" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="grid grid--3">
+              <div class="field">
+                <label class="field__label" for="decision-{{ item.id }}">Decision</label>
+                <select class="select" id="decision-{{ item.id }}" name="decision">
+                  <option value="reviewed">Reviewed — assessed level confirmed</option>
+                  <option value="verified">Verified — checked and independently confirmed</option>
+                  <option value="rejected">Rejected — not counted</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field__label" for="f-level-{{ item.id }}">Assessed level</label>
+                {{ level_select("assessed_level", item.demonstrated_level or "", True, "No level") }}
+              </div>
+              <div class="field">
+                <label class="field__label" for="notes-{{ item.id }}">Note to the student</label>
+                <input class="input" type="text" id="notes-{{ item.id }}" name="notes" maxlength="2000"
+                       placeholder="What you checked, and against which rubric">
+              </div>
+            </div>
+            <p class="small muted" style="margin:0 0 12px">
+              For certificate evidence, the level you set records the learning claim. Practical
+              evidence beside it is judged separately.
+            </p>
+            <button class="btn btn--primary btn--sm" type="submit">Record decision</button>
+          </form>
+        </div>
+      </details>
+    {% else %}
+      <div class="panel" style="margin-top:16px">
+        <p class="small" style="margin:0"><strong>Reviewer note</strong></p>
+        <p class="small muted" style="margin:4px 0 0">{{ item.review_notes or 'No note recorded.' }}</p>
+      </div>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+  {{ empty("Nothing in this queue", "When a student submits evidence it appears here, oldest first.", "/mentor/evidence", "Refresh", "check-circle") }}
+{% endif %}
+{% endblock %}

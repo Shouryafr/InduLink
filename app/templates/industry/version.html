@@ -1,0 +1,138 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty, state_chip %}
+{% block title %}Version {{ version.version_no }} — {{ project.title }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="Breadcrumb">
+  <ol class="breadcrumb">
+    <li><a href="/industry">Workspace</a></li>
+    <li><a href="/industry/projects/{{ project.id }}">{{ project.title }}</a></li>
+    <li aria-current="page">Version {{ version.version_no }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <div class="cluster" style="margin-bottom:8px">
+    {{ state_chip(project.state) }}
+    {{ chip("Version " ~ version.version_no, "", "file-text") }}
+    {% if is_current %}{{ chip("Current", "ok", "check") }}{% endif %}
+  </div>
+  <h1 class="page-head__title">Requirement version {{ version.version_no }}</h1>
+  <p class="page-head__sub">
+    Recorded {{ version.created_at|dtfmt }} · {{ version.reason or 'No reason recorded' }}
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if not is_current %}
+<div class="banner banner--info" role="status">
+  <svg class="banner__icon" aria-hidden="true"><use href="#i-info"></use></svg>
+  <div>
+    <p class="banner__title">This is a historical version</p>
+    <p class="banner__text">It stays readable exactly as it was approved. The current version is the one used for matching.</p>
+  </div>
+</div>
+{% endif %}
+
+<section class="card" aria-labelledby="snapshot-heading">
+  <div class="card__head">
+    <div>
+      <h2 class="card__title" id="snapshot-heading">Requirements in this version</h2>
+      <p class="card__sub">Weights as stored, plus the percentage the interface shows.</p>
+    </div>
+  </div>
+
+  {% if requirements %}
+  <div class="table-wrap">
+    <table class="data">
+      <caption class="visually-hidden">Requirements recorded in version {{ version.version_no }}</caption>
+      <thead>
+        <tr>
+          <th scope="col">Skill</th>
+          <th scope="col" class="num">Required level</th>
+          <th scope="col" class="num">Weight</th>
+          <th scope="col" class="num">Shown as</th>
+          <th scope="col">Check</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in requirements %}
+        <tr>
+          <td><strong>{{ item.skill_name }}</strong></td>
+          <td class="num">{{ item.required_level }}</td>
+          <td class="num">{{ '%.3f'|format(item.weight) }}</td>
+          <td class="num">{{ percentages[loop.index0] }}%</td>
+          <td>{% if item.is_mandatory %}{{ status_chip("Mandatory", "risk") }}{% else %}{{ chip("Weighted only", "", "scale") }}{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    {{ empty("No requirements recorded", "This version has no requirement rows.", "", "", "book") }}
+  {% endif %}
+</section>
+
+{% if diff %}
+<section class="card" style="margin-top:24px" aria-labelledby="diff-heading">
+  <div class="card__head">
+    <div>
+      <h2 class="card__title" id="diff-heading">What changed from the previous version</h2>
+      <p class="card__sub">{{ diff.summary }}. Added, removed and changed rows are listed separately.</p>
+    </div>
+  </div>
+
+  <div class="grid grid--3">
+    <div>
+      <p class="score__label">Added</p>
+      {% if diff.added %}
+        <ul class="small" style="margin:0;padding-left:18px">
+          {% for item in diff.added %}
+          <li>Skill {{ item.skill_id }} at level {{ item.required_level }}{% if item.is_mandatory %} (mandatory){% endif %}</li>
+          {% endfor %}
+        </ul>
+      {% else %}<p class="small muted" style="margin:0">Nothing added.</p>{% endif %}
+    </div>
+    <div>
+      <p class="score__label">Removed</p>
+      {% if diff.removed %}
+        <ul class="small" style="margin:0;padding-left:18px">
+          {% for item in diff.removed %}
+          <li>Skill {{ item.skill_id }} at level {{ item.required_level }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}<p class="small muted" style="margin:0">Nothing removed.</p>{% endif %}
+    </div>
+    <div>
+      <p class="score__label">Changed</p>
+      {% if diff.changed %}
+        <ul class="small" style="margin:0;padding-left:18px">
+          {% for item in diff.changed %}
+          <li>
+            Skill {{ item.after.skill_id }}:
+            level {{ item.before.required_level }} → {{ item.after.required_level }},
+            weight {{ '%.2f'|format(item.before.weight) }} → {{ '%.2f'|format(item.after.weight) }},
+            {{ 'mandatory' if item.after.is_mandatory else 'optional' }}
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}<p class="small muted" style="margin:0">Nothing changed.</p>{% endif %}
+    </div>
+  </div>
+
+  <p class="small muted" style="margin-top:24px">
+    A requirement change proposes new recommendations. It never replaces a confirmed team or mentor
+    assignment: that needs an authorised confirmation, with a recorded reason.
+  </p>
+</section>
+{% endif %}
+
+<p style="margin-top:24px">
+  <a class="btn btn--secondary btn--sm" href="/industry/projects/{{ project.id }}">
+    {{ icon("arrow-right", "btn__icon") }} Back to the challenge
+  </a>
+</p>
+{% endblock %}

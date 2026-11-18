@@ -1,0 +1,83 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty %}
+{% block title %}Appeals — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Outcomes</p>
+  <h1 class="page-head__title">Appeals</h1>
+  <p class="page-head__sub">
+    Ask for a contribution record to be reviewed. An administrator decides; the decision and its
+    reason are recorded.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if saved == 'appeal' %}{{ banner("Appeal submitted", "An administrator will review it. You will see the decision here.", "ok") }}{% endif %}
+{% if error %}{{ banner("That appeal was not submitted", error, "risk") }}{% endif %}
+
+<div class="grid grid--split">
+  <section class="card" aria-labelledby="appeals-heading">
+    <h2 class="card__title" id="appeals-heading">Your appeals</h2>
+    {% if appeals %}
+    <ul class="stack" style="list-style:none;padding:0;margin:16px 0 0;max-width:none">
+      {% for appeal in appeals %}
+      <li style="border-top:1px solid var(--line);padding-top:14px">
+        <div class="split" style="align-items:flex-start">
+          <div style="max-width:58ch">
+            <p class="small muted" style="margin:0 0 6px">Submitted {{ appeal.created_at|dtfmt }}</p>
+            <p style="margin:0;white-space:pre-line">{{ appeal.statement }}</p>
+            {% if appeal.resolution %}
+            <p class="small" style="margin:10px 0 0"><strong>Resolution:</strong> {{ appeal.resolution }}</p>
+            {% endif %}
+          </div>
+          {% set tones = {"open": "warn", "under_review": "info", "resolved": "ok", "withdrawn": "unknown"} %}
+          {{ status_chip(appeal.status|replace('_', ' ')|title, tones.get(appeal.status, "unknown")) }}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+      {{ empty("No appeals", "If a contribution record misstates your work, you can ask for it to be reviewed.", "", "", "alert-triangle") }}
+    {% endif %}
+  </section>
+
+  <aside class="stack-lg">
+    <section class="card">
+      <h2 class="card__title">Submit an appeal</h2>
+      <form method="post" action="/student/appeals" style="margin-top:16px">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        {% if contributions %}
+        <div class="field">
+          <label class="field__label" for="contribution_id">Contribution record</label>
+          <select class="select" id="contribution_id" name="contribution_id">
+            <option value="">Not about a specific record</option>
+            {% for contribution in contributions %}
+            <option value="{{ contribution.id }}">Contribution {{ contribution.id }} · {{ contribution.summary[:60] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+        <div class="field">
+          <label class="field__label" for="statement">What should be reviewed?</label>
+          <textarea class="textarea" id="statement" name="statement" rows="5" required
+                    placeholder="The contribution summary understates the work I did on the data model."></textarea>
+          <span class="field__help">Be specific. The administrator sees this statement and the record.</span>
+        </div>
+        <button class="btn btn--primary btn--sm" type="submit">Submit appeal</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2 class="card__title">What happens next</h2>
+      <ol class="small stack-sm" style="margin:12px 0 0;padding-left:18px">
+        <li>The appeal opens and is visible to administrators.</li>
+        <li>An administrator may mark it under review while checking the record.</li>
+        <li>A closure needs a written resolution, which appears here.</li>
+        <li>Appeals never change a level directly; they change the record's description.</li>
+      </ol>
+    </section>
+  </aside>
+</div>
+{% endblock %}

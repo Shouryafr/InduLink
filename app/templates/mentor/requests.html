@@ -1,0 +1,87 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty %}
+{% block title %}Mentor requests — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Mentoring</p>
+  <h1 class="page-head__title">Mentor requests</h1>
+  <p class="page-head__sub">
+    You decide, and the decision is final for the slot. Confirming checks your capacity and
+    availability first; two mentors cannot both be confirmed on one challenge.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if saved == 'decided' %}{{ banner("Decision recorded", "The partner and the project team have been notified.", "ok") }}{% endif %}
+{% if error %}{{ banner("That decision did not save", error, "risk") }}{% endif %}
+
+<p class="small muted">
+  Current load: {{ workload.active_projects }} of {{ workload.max_active_projects }} projects,
+  {{ workload.hours_per_week }} of {{ workload.weekly_cap }} weekly hours
+  ({{ workload.utilization_pct }}%).
+</p>
+
+{% if assignments %}
+<div class="stack" style="max-width:none">
+  {% for assignment in assignments %}
+  {% set project = projects.get(assignment.project_id) %}
+  <section class="card" style="margin-top:0">
+    <div class="split" style="align-items:flex-start;gap:20px">
+      <div style="min-width:0">
+        <div class="cluster" style="margin-bottom:6px">
+          {% set tones = {"proposed": "warn", "confirmed": "ok", "declined": "risk", "cancelled": "unknown", "completed": "ok"} %}
+          {{ status_chip(assignment.state|title, tones.get(assignment.state, "unknown")) }}
+          {% if project %}{{ chip(project.domain or "No domain", "", "book") }}{% endif %}
+        </div>
+        <h2 class="card__title" style="margin:0">
+          {% if project %}{{ project.title }}{% else %}Project {{ assignment.project_id }}{% endif %}
+        </h2>
+        {% if project %}
+        <p class="small muted" style="margin:4px 0 0">
+          {{ project.team_size_min }}–{{ project.team_size_max }} people ·
+          {{ project.start_date|datefmt }} to {{ project.deadline|datefmt }} · {{ project.timezone }}
+        </p>
+        {% endif %}
+        <p class="small" style="margin:10px 0 0">{{ assignment.reason or 'No reason recorded.' }}</p>
+
+        {% if assignment.fit_snapshot and assignment.fit_snapshot.get('reasons') %}
+        <details class="why" style="margin-top:10px">
+          <summary>Why you were suggested</summary>
+          <div class="why__body">
+            <ul class="small stack-sm" style="margin:0;padding-left:18px">
+              {% for reason in assignment.fit_snapshot.get('reasons', []) %}<li>{{ reason }}</li>{% endfor %}
+            </ul>
+          </div>
+        </details>
+        {% endif %}
+      </div>
+
+      {% if assignment.state == 'proposed' %}
+      <div style="flex:0 0 240px">
+        <form method="post" action="/mentor/requests/{{ assignment.id }}/decide">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="field">
+            <label class="field__label" for="reason-{{ assignment.id }}">Note (optional)</label>
+            <input class="input" type="text" id="reason-{{ assignment.id }}" name="reason" maxlength="200">
+          </div>
+          <div class="cluster">
+            <button class="btn btn--primary btn--sm" type="submit" name="decision" value="accept">Confirm</button>
+            <button class="btn btn--quiet btn--sm" type="submit" name="decision" value="decline">Decline</button>
+          </div>
+        </form>
+      </div>
+      {% else %}
+      <p class="small muted" style="margin:0;flex:0 0 200px">
+        {% if assignment.state == 'confirmed' %}Confirmed {{ assignment.confirmed_at|dtfmt }}{% else %}Closed {{ assignment.ended_at|dtfmt if assignment.ended_at else '—' }}{% endif %}
+      </p>
+      {% endif %}
+    </div>
+  </section>
+  {% endfor %}
+</div>
+{% else %}
+  {{ empty("No mentor requests", "A partner can request you from the mentor fit list. Requests appear here.", "", "", "inbox") }}
+{% endif %}
+{% endblock %}

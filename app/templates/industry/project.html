@@ -1,0 +1,326 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty, state_chip, visibility_chip, freshness, level_select %}
+{% block title %}{{ project.title }} — InduLink{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="Breadcrumb">
+  <ol class="breadcrumb">
+    <li><a href="/industry">Workspace</a></li>
+    <li><a href="/industry/projects">Challenges</a></li>
+    <li aria-current="page">{{ project.title }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <div class="cluster" style="margin-bottom:8px">
+    {{ state_chip(project.state) }}
+    {{ visibility_chip(project.visibility) }}
+    {% if version %}{{ chip("v" ~ version.version_no, "", "file-text") }}{% endif %}
+  </div>
+  <h1 class="page-head__title">{{ project.title }}</h1>
+  <p class="page-head__sub">
+    {{ project.domain or 'No domain set' }} · {{ project.team_size_min }}–{{ project.team_size_max }} people ·
+    {{ project.start_date|datefmt }} to {{ project.deadline|datefmt }}
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if saved == 'created' %}{{ banner("Challenge saved as a draft", "Version 1 of the requirements is recorded. Submit it for approval when it is ready.", "ok") }}{% endif %}
+{% if saved == 'version' %}{{ banner("New requirement version created", "The previous version remains readable, and confirmed assignments were not changed.", "ok") }}{% endif %}
+{% if saved == 'state' %}{{ banner("State updated", "The transition was legal and is recorded in the audit log.", "ok") }}{% endif %}
+{% if error %}{{ banner("That change did not save", error, "risk") }}{% endif %}
+
+{% if project.state == 'draft' %}
+  <div class="banner banner--info" role="status">
+    <svg class="banner__icon" aria-hidden="true"><use href="#i-info"></use></svg>
+    <div>
+      <p class="banner__title">This challenge is a draft</p>
+      <p class="banner__text">Students cannot see it, and nothing is matched until it is approved and opened.</p>
+    </div>
+  </div>
+{% elif project.state == 'pending_approval' %}
+  <div class="banner banner--warn" role="status">
+    <svg class="banner__icon" aria-hidden="true"><use href="#i-clock"></use></svg>
+    <div>
+      <p class="banner__title">Awaiting administrator approval</p>
+      <p class="banner__text">Requirements are locked for review. An administrator will approve or return it.</p>
+    </div>
+  </div>
+{% endif %}
+
+<div class="grid grid--split">
+  <div>
+    <section class="card" aria-labelledby="requirements-heading">
+      <div class="card__head">
+        <div>
+          <h2 class="card__title" id="requirements-heading">Requirements</h2>
+          <p class="card__sub">Weights are normalised to 100%. Mandatory items are pass/fail.</p>
+        </div>
+        {{ freshness(stamp) }}
+      </div>
+
+      {% if requirements %}
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="visually-hidden">Requirement set for version {{ version.version_no if version else 1 }}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Skill</th>
+              <th scope="col" class="num">Required level</th>
+              <th scope="col" class="num">Weight</th>
+              <th scope="col">Check</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in requirements %}
+            <tr>
+              <td><strong>{{ item.skill_name }}</strong></td>
+              <td class="num">{{ item.required_level }}</td>
+              <td class="num">{{ percentages[loop.index0] }}%</td>
+              <td>
+                {% if item.is_mandatory %}
+                  {{ status_chip("Mandatory", "risk") }}
+                {% else %}
+                  {{ chip("Weighted only", "", "scale") }}
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="small muted" style="margin-top:12px">
+        Total weight: {{ percentages|sum }}%. Relative importances were normalised on save; the
+        stored values are what scoring uses.
+      </p>
+      {% else %}
+        {{ empty("No requirements yet", "A challenge needs at least one required skill before it can be approved.", "", "", "book") }}
+      {% endif %}
+    </section>
+
+    <section class="card" style="margin-top:24px" aria-labelledby="brief-heading">
+      <h2 class="card__title" id="brief-heading">Brief</h2>
+      <p style="margin-top:16px;white-space:pre-line">{{ project.description or 'No brief written yet.' }}</p>
+
+      <div class="grid grid--2" style="margin-top:24px">
+        <div>
+          <p class="score__label">Deliverables</p>
+          <p class="small" style="white-space:pre-line">{{ project.deliverables_summary or '—' }}</p>
+        </div>
+        <div>
+          <p class="score__label">Evaluation criteria</p>
+          <p class="small" style="white-space:pre-line">{{ project.evaluation_criteria or '—' }}</p>
+        </div>
+      </div>
+
+      {% if project.eligibility_note %}
+      <div class="panel" style="margin-top:16px">
+        <p class="small" style="margin:0"><strong>Eligibility rule</strong></p>
+        <p class="small muted" style="margin:4px 0 0">{{ project.eligibility_note }}</p>
+      </div>
+      {% endif %}
+    </section>
+
+    <details class="why" style="margin-top:24px">
+      <summary>Edit requirements — creates a new version</summary>
+      <div class="why__body">
+        <p class="small muted" style="margin-top:0">
+          The current version stays readable and a diff is recorded. Confirmed teams and mentor
+          assignments are never changed automatically by this action.
+        </p>
+        <form method="post" action="/industry/projects/{{ project.id }}/requirements">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+          <div id="requirement-rows">
+            {% for item in requirements %}
+            <div data-requirement-row class="req-row">
+              <div class="field">
+                <label class="field__label">Skill</label>
+                <select class="select" name="skill_id">
+                  <option value="">Choose a skill</option>
+                  {% for skill in registry.items %}
+                  <option value="{{ skill.id }}" {% if skill.id == item.skill_id %}selected{% endif %}>{{ skill.canonical_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="field">
+                <label class="field__label">Required level</label>
+                <select class="select" name="required_level">
+                  {% for level in [1,2,3,4,5] %}
+                  <option value="{{ level }}" {% if item.required_level == level %}selected{% endif %}>{{ level }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="field">
+                <label class="field__label">Weight</label>
+                <input class="input" type="number" name="weight" min="0.01" max="1" step="0.01"
+                       value="{{ '%.2f'|format(item.weight) }}">
+              </div>
+              <div class="field">
+                <label class="field__label">Mandatory</label>
+                <select class="select" name="mandatory">
+                  <option value="yes" {% if item.is_mandatory %}selected{% endif %}>Yes</option>
+                  <option value="no" {% if not item.is_mandatory %}selected{% endif %}>No</option>
+                </select>
+              </div>
+              <div class="field" style="align-self:end">
+                <button class="btn btn--quiet btn--sm" type="button" data-remove-requirement>Remove</button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="cluster" style="margin-top:16px">
+            <button class="btn btn--secondary btn--sm" type="button" data-add-requirement>
+              {{ icon("plus", "btn__icon") }} Add row
+            </button>
+          </div>
+
+          <div class="field" style="margin-top:16px">
+            <label class="field__label" for="reason">Why are the requirements changing?</label>
+            <input class="input" type="text" id="reason" name="reason" required maxlength="300"
+                   placeholder="Networking is now essential to the deliverable">
+            <span class="field__help">Recorded with the version and shown in the audit log.</span>
+          </div>
+
+          <button class="btn btn--primary btn--sm" type="submit">Save new version</button>
+        </form>
+      </div>
+    </details>
+  </div>
+
+  <aside class="stack-lg">
+    <section class="card">
+      <h2 class="card__title">Matching and delivery</h2>
+      <p class="card__sub">Ranked candidates, the team plan, a mentor and the read-only What-If.</p>
+      <ul class="stack-sm" style="list-style:none;padding:0;margin:16px 0 0;max-width:none">
+        <li><a href="/industry/projects/{{ project.id }}/candidates">Candidate ranking <span class="small muted">— with a Why panel</span></a></li>
+        <li><a href="/industry/projects/{{ project.id }}/team">Team plan <span class="small muted">— suggest and confirm</span></a></li>
+        <li><a href="/industry/projects/{{ project.id }}/mentor">Mentor fit <span class="small muted">— request a mentor</span></a></li>
+        <li><a href="/industry/projects/{{ project.id }}/what-if">What-If <span class="small muted">— read-only simulation</span></a></li>
+        <li><a href="/industry/projects/{{ project.id }}/review">Evaluation and feedback</a></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2 class="card__title">Version history</h2>
+      <p class="card__sub">Immutable. Every version stays readable.</p>
+      <ul class="stack-sm" style="list-style:none;padding:0;margin:16px 0 0;max-width:none">
+        {% for row in versions %}
+        <li style="border-top:1px solid var(--line);padding-top:10px">
+          <div class="split" style="align-items:flex-start">
+            <div>
+              <a href="/industry/projects/{{ project.id }}/versions/{{ row.version_no }}">
+                Version {{ row.version_no }}
+              </a>
+              <span class="small muted" style="display:block">
+                {{ row.reason or 'No reason recorded' }}
+              </span>
+              <span class="small muted" style="display:block">{{ row.created_at|dtfmt }}</span>
+            </div>
+            {% if row.is_current %}{{ chip("Current", "ok", "check") }}{% endif %}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2 class="card__title">Change state</h2>
+      <p class="card__sub">Only legal transitions are offered. Anything else is refused.</p>
+
+      {% if next_states %}
+      <form method="post" action="/industry/projects/{{ project.id }}/state" style="margin-top:16px"
+            data-confirm="Change this challenge's state? Confirmed assignments are never replaced automatically.">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="field">
+          <label class="field__label" for="target">Move to</label>
+          <select class="select" id="target" name="target">
+            {% for state in next_states %}
+            <option value="{{ state.value }}">{{ state.value|replace('_', ' ')|title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field__label" for="state_reason">Reason</label>
+          <input class="input" type="text" id="state_reason" name="reason" maxlength="200"
+                 placeholder="Required when completing or cancelling">
+        </div>
+        <button class="btn btn--secondary btn--sm" type="submit">Apply transition</button>
+      </form>
+      <p class="small muted" style="margin:12px 0 0">
+        Approval is an administrator action. {% if user.role == 'admin' %}You can approve here.{% else %}Submitting for approval is yours; approving is not.{% endif %}
+      </p>
+      {% else %}
+        <p class="small muted" style="margin-top:12px">This challenge has reached a final state.</p>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h2 class="card__title">Visibility</h2>
+      <p class="card__sub">Who can open this challenge.</p>
+      <p style="margin:16px 0 0">{{ visibility_chip(project.visibility) }}</p>
+      <p class="small muted" style="margin:12px 0 0">
+        {% if project.visibility == 'private' %}
+          Only your organisation and administrators can open it. A student outside the project is refused on the server.
+        {% elif project.visibility == 'university' %}
+          Any signed-in student or mentor at the institution can open it.
+        {% else %}
+          Any signed-in student can open it, including on a shared link.
+        {% endif %}
+      </p>
+    </section>
+  </aside>
+</div>
+
+<template id="requirement-row-template">
+  <div data-requirement-row class="req-row">
+    <div class="field">
+      <label class="field__label">Skill</label>
+      <select class="select" name="skill_id">
+        <option value="">Choose a skill</option>
+        {% for skill in registry.items %}
+        <option value="{{ skill.id }}">{{ skill.canonical_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label class="field__label">Required level</label>
+      <select class="select" name="required_level">
+        {% for level in [1,2,3,4,5] %}<option value="{{ level }}" {% if level == 3 %}selected{% endif %}>{{ level }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label class="field__label">Weight</label>
+      <input class="input" type="number" name="weight" min="0.01" max="1" step="0.01" value="0.20">
+    </div>
+    <div class="field">
+      <label class="field__label">Mandatory</label>
+      <select class="select" name="mandatory"><option value="yes">Yes</option><option value="no">No</option></select>
+    </div>
+    <div class="field" style="align-self:end">
+      <button class="btn btn--quiet btn--sm" type="button" data-remove-requirement>Remove</button>
+    </div>
+  </div>
+</template>
+{% endblock %}
+
+{% block styles %}
+<style>
+  .req-row {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: start;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    margin-top: 16px;
+  }
+  @media (max-width: 900px) {
+    .req-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  }
+</style>
+{% endblock %}

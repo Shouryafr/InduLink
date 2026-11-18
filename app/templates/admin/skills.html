@@ -1,0 +1,135 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, banner, empty, field_errors %}
+{% block title %}Skill registry — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Registry</p>
+  <h1 class="page-head__title">Skill registry</h1>
+  <p class="page-head__sub">
+    One canonical name per skill, with aliases that resolve to it. A typed alias never creates a
+    duplicate skill.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if saved == 'skill' %}{{ banner("Skill added", "It is now available on profiles, registries and challenge requirements.", "ok") }}{% endif %}
+{% if saved == 'alias' %}{{ banner("Alias added", "That wording now resolves to the same canonical skill.", "ok") }}{% endif %}
+{% if saved == 'proposal' %}{{ banner("Proposal resolved", "The decision is recorded in the audit log.", "ok") }}{% endif %}
+{% if request.query_params.get('error') %}{{ banner("That change did not save", "The name may already exist, or already be an alias for another skill.", "risk") }}{% endif %}
+{% if error %}{{ banner("Check the highlighted field", error, "risk") }}{% endif %}
+
+<div class="grid grid--split">
+  <section class="card" aria-labelledby="registry-heading">
+    <div class="card__head">
+      <div>
+        <h2 class="card__title" id="registry-heading">Canonical skills</h2>
+        <p class="card__sub">{{ registry.items|length }} skill(s) in the registry.</p>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data">
+        <caption class="visually-hidden">Canonical skills with categories and aliases</caption>
+        <thead>
+          <tr>
+            <th scope="col">Skill</th>
+            <th scope="col">Category</th>
+            <th scope="col">Aliases</th>
+            <th scope="col">Add alias</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for skill in registry.items %}
+          <tr>
+            <td><strong>{{ skill.canonical_name }}</strong></td>
+            <td>{{ skill.category }}</td>
+            <td class="small muted">
+              {% set ns = namespace(found=false) %}
+              {% for alias in aliases if alias.skill_id == skill.id %}
+                {{ alias.alias }}{% if not loop.last %}, {% endif %}
+                {% set ns.found = true %}
+              {% endfor %}
+              {% if not ns.found %}—{% endif %}
+            </td>
+            <td>
+              <form method="post" action="/admin/skills/{{ skill.id }}/aliases" class="cluster cluster-sm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input class="input" type="text" name="alias" required maxlength="120"
+                       aria-label="New alias for {{ skill.canonical_name }}"
+                       style="width:120px;padding:6px 10px;font-size:var(--fs-14)">
+                <button class="btn btn--secondary btn--sm" type="submit">Add</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <aside class="stack-lg">
+    <section class="card">
+      <h2 class="card__title">Add a skill</h2>
+      <p class="card__sub">Aliases are comma-separated.</p>
+      <form method="post" action="/admin/skills" style="margin-top:16px">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="field">
+          <label class="field__label" for="name">Canonical name</label>
+          <input class="input" type="text" id="name" name="name" required maxlength="120"
+                 placeholder="Data visualisation">
+          {{ field_errors(errors, 'name') }}
+        </div>
+        <div class="field">
+          <label class="field__label" for="category">Category</label>
+          <select class="select" id="category" name="category">
+            {% for category in SKILL_CATEGORIES %}
+            <option value="{{ category }}">{{ category|replace('_', ' ')|title }}</option>
+            {% endfor %}
+          </select>
+          {{ field_errors(errors, 'category') }}
+        </div>
+        <div class="field">
+          <label class="field__label" for="aliases">Aliases</label>
+          <input class="input" type="text" id="aliases" name="aliases" maxlength="300"
+                 placeholder="dataviz, data viz">
+        </div>
+        <button class="btn btn--primary btn--sm" type="submit">Add skill</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2 class="card__title">Proposed skills</h2>
+      <p class="card__sub">Suggested by students or mentors who could not find a match.</p>
+
+      {% if proposals %}
+      <ul class="stack" style="list-style:none;padding:0;margin:16px 0 0;max-width:none">
+        {% for proposal in proposals %}
+        <li style="border-top:1px solid var(--line);padding-top:12px">
+          <p style="margin:0;font-weight:600">{{ proposal.proposed_name }}</p>
+          <p class="small muted" style="margin:2px 0 8px">
+            {{ proposal.category }} · {{ proposal.created_at|datefmt }}{% if proposal.note %} · {{ proposal.note }}{% endif %}
+          </p>
+          <div class="cluster cluster-sm">
+            <form method="post" action="/admin/proposals/{{ proposal.id }}/resolve">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="decision" value="accept">
+              <button class="btn btn--primary btn--sm" type="submit">Accept</button>
+            </form>
+            <form method="post" action="/admin/proposals/{{ proposal.id }}/resolve">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="decision" value="reject">
+              <button class="btn btn--quiet btn--sm" type="submit">Reject</button>
+            </form>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+        <p class="small muted" style="margin:16px 0 0">No open proposals.</p>
+      {% endif %}
+    </section>
+  </aside>
+</div>
+{% endblock %}

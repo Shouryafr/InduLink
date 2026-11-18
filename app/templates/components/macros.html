@@ -1,0 +1,146 @@
+{# Reusable components. Built once, used by every later phase. #}
+
+{% macro icon(name, cls="") -%}
+<svg class="{{ cls }}" aria-hidden="true" focusable="false"><use href="#i-{{ name }}"></use></svg>
+{%- endmacro %}
+
+{% macro chip(label, tone="", icon_name="") -%}
+<span class="chip{% if tone %} chip--{{ tone }}{% endif %}">
+  {%- if icon_name %}<svg class="chip__icon" aria-hidden="true" focusable="false"><use href="#i-{{ icon_name }}"></use></svg>{% endif -%}
+  {{ label }}
+</span>
+{%- endmacro %}
+
+{# Status chip: always an icon plus a text label, never colour alone. #}
+{% macro status_chip(label, tone) -%}
+  {%- set icon_map = {"ok": "check-circle", "warn": "alert-triangle", "risk": "alert-octagon", "info": "info", "unknown": "clock"} -%}
+  {{ chip(label, tone, icon_map.get(tone, "info")) }}
+{%- endmacro %}
+
+{% macro banner(title, body, tone="info", icon_name="") -%}
+{%- set default_icons = {"info": "info", "ok": "check-circle", "warn": "alert-triangle", "risk": "alert-octagon"} -%}
+<div class="banner banner--{{ tone }}" role="{{ 'alert' if tone in ['risk', 'warn'] else 'status' }}">
+  {{ icon(icon_name or default_icons.get(tone, "info"), "banner__icon") }}
+  <div>
+    {% if title %}<p class="banner__title">{{ title }}</p>{% endif %}
+    <p class="banner__text">{{ body }}</p>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro field(name, label, value="", help="", error="", type="text", required=False, maxlength=None, placeholder="", autocomplete="", inputmode="") -%}
+<div class="field">
+  <label class="field__label" for="f-{{ name }}">
+    {{ label }}{% if required %}<span class="field__req" aria-hidden="true">*</span>{% endif %}
+  </label>
+  <input
+    class="input"
+    type="{{ type }}"
+    id="f-{{ name }}"
+    name="{{ name }}"
+    value="{{ value or '' }}"
+    {% if required %}required aria-required="true"{% endif %}
+    {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+    {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+    {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+    {% if inputmode %}inputmode="{{ inputmode }}"{% endif %}
+    {% if error %}aria-invalid="true" aria-describedby="e-{{ name }}"{% elif help %}aria-describedby="h-{{ name }}"{% endif %}
+  >
+  {% if help %}<span class="field__help" id="h-{{ name }}">{{ help }}</span>{% endif %}
+  {% if error %}<span class="field__error" id="e-{{ name }}">{{ icon("alert-octagon", "btn__icon") }}{{ error }}</span>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro field_errors(errors, name) -%}
+{%- if errors and errors.get(name) -%}
+<span class="field__error">{{ icon("alert-octagon", "btn__icon") }}{{ errors.get(name)[0] }}</span>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro freshness(stamp, icon_name="clock") -%}
+<span class="freshness{% if stamp.stale %} freshness--stale{% endif %}">
+  {{ icon(icon_name, "chip__icon") }}{{ stamp.label }}
+</span>
+{%- endmacro %}
+
+{% macro empty(title, body, action_href="", action_label="", icon_name="file-text") -%}
+<div class="empty">
+  <svg class="empty__icon" aria-hidden="true" focusable="false"><use href="#i-{{ icon_name }}"></use></svg>
+  <p class="empty__title">{{ title }}</p>
+  <p class="empty__body">{{ body }}</p>
+  {% if action_href and action_label %}
+    <a class="btn btn--secondary" href="{{ action_href }}">{{ action_label }}</a>
+  {% endif %}
+</div>
+{%- endmacro %}
+
+{# Six separate fields, never merged: declared, assessed, effective, evidence, score, readiness. #}
+{% macro skill_assessment_row(view) -%}
+{% set a = view.assessment %}
+<tr>
+  <td>
+    <strong>{{ view.skill_name }}</strong>
+    <span class="small muted" style="display:block">{{ view.category|replace('_', ' ') }}</span>
+  </td>
+  <td class="num">{{ a.declared_level if a.declared_level is not none else '—' }}</td>
+  <td class="num">{{ a.confirmed_level if a.confirmed_level is not none else '—' }}</td>
+  <td class="num">{{ a.provisional_level if a.provisional_level is not none else '—' }}</td>
+  <td>{{ status_chip(a.label_text, a.tone) }}</td>
+  <td class="num">{{ view.evidence_count }}</td>
+  <td>
+    {% if a.notes %}
+      <details class="why" style="border:0;background:none;margin:0">
+        <summary style="padding:0;min-height:auto;font-weight:400;color:var(--ink-muted)">Detail</summary>
+        <div class="why__body" style="border:0;padding:8px 0 0">
+          <ul class="small muted" style="margin:0">
+            {% for note in a.notes %}<li>{{ note }}</li>{% endfor %}
+          </ul>
+        </div>
+      </details>
+    {% else %}—{% endif %}
+  </td>
+</tr>
+{%- endmacro %}
+
+{% macro state_chip(state) -%}
+{%- set map = {
+  "draft": ("Draft", "unknown"),
+  "pending_approval": ("Awaiting approval", "warn"),
+  "approved": ("Approved", "info"),
+  "open": ("Open for matching", "ok"),
+  "active": ("Active", "ok"),
+  "completed": ("Completed", "ok"),
+  "cancelled": ("Cancelled", "risk")
+} -%}
+{%- set pair = map.get(state, (state, "unknown")) -%}
+{{ status_chip(pair[0], pair[1]) }}
+{%- endmacro %}
+
+{% macro visibility_chip(visibility) -%}
+{%- set map = {"public": ("Public", "info"), "university": ("Institution only", "warn"), "private": ("Private", "unknown")} -%}
+{%- set pair = map.get(visibility, (visibility, "unknown")) -%}
+{{ chip(pair[0], pair[1], "lock" if visibility == "private" else "users") }}
+{%- endmacro %}
+
+{% macro demo_ribbon(demo_mode=false) -%}
+{#- Imported macros cannot see the rendering context, so the flag is passed in. -#}
+{% if demo_mode %}
+<div class="synthetic-ribbon">
+  <div class="synthetic-ribbon__inner">
+    <svg class="synthetic-ribbon__icon" aria-hidden="true" focusable="false"><use href="#i-info"></use></svg>
+    <span><strong>Synthetic demo data.</strong> Fictional students, companies and mentors. Behaviour can be demonstrated; real-world effectiveness cannot.</span>
+  </div>
+</div>
+{% endif %}
+{%- endmacro %}
+
+{% macro level_select(name, selected="", include_blank=False, blank_label="Choose a level") -%}
+<select class="select" id="f-{{ name }}" name="{{ name }}">
+  {% if include_blank %}<option value="">{{ blank_label }}</option>{% endif %}
+  <option value="1" {{ 'selected' if selected|string == '1' }}>1 — Awareness</option>
+  <option value="2" {{ 'selected' if selected|string == '2' }}>2 — Assisted</option>
+  <option value="3" {{ 'selected' if selected|string == '3' }}>3 — Independent</option>
+  <option value="4" {{ 'selected' if selected|string == '4' }}>4 — Advanced</option>
+  <option value="5" {{ 'selected' if selected|string == '5' }}>5 — Expert</option>
+</select>
+{%- endmacro %}

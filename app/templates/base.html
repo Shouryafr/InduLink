@@ -1,0 +1,103 @@
+{% from "components/macros.html" import icon, demo_ribbon %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}InduLink — from industry challenges to industry-ready talent{% endblock %}</title>
+  <meta name="description" content="{% block description %}InduLink turns industry challenges into structured requirements, matches evidence-backed student skills, and records verified outcomes. Decision support, not a guarantee.{% endblock %}">
+  <meta name="color-scheme" content="light dark">
+  <link rel="preload" href="/static/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/static/fonts/cormorant-garamond.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/static/css/fonts.css?v={{ asset_v }}">
+  <link rel="stylesheet" href="/static/css/tokens.css?v={{ asset_v }}">
+  <link rel="stylesheet" href="/static/css/app.css?v={{ asset_v }}">
+  {% block styles %}{% endblock %}
+  <script src="/static/js/theme.js?v={{ asset_v }}"></script>
+</head>
+<body>
+  {% include "partials/sprite.html" %}
+  <a class="skip-link" href="#main">Skip to main content</a>
+  {{ demo_ribbon(demo_mode) }}
+
+  {% block chrome %}
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="wordmark" href="/">
+        <svg class="wordmark__mark" aria-hidden="true" focusable="false"><use href="#i-mark"></use></svg>
+        InduLink<span class="wordmark__dot">.</span>
+      </a>
+      <nav class="topnav" aria-label="Main">
+        <a href="/how-it-works" {% if active_path == '/how-it-works' %}aria-current="page"{% endif %}>How it works</a>
+        <a href="/#roles">For every role</a>
+        <a href="/privacy">Privacy</a>
+      </nav>
+      <div class="topbar__spacer"></div>
+      <div class="topbar__actions">
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch between light and dark appearance">
+          <svg class="theme-toggle__sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg>
+          <svg class="theme-toggle__moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg>
+        </button>
+        {% if user %}
+          <a class="btn btn--quiet" href="{{ home_path }}">Open workspace</a>
+        {% else %}
+          <a class="btn btn--quiet" href="/sign-in">Sign in</a>
+          <a class="btn btn--primary" href="/register">Create account</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+  {% endblock %}
+
+  <main id="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block footer %}
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <a class="wordmark" href="/">
+          <svg class="wordmark__mark" aria-hidden="true" focusable="false"><use href="#i-mark"></use></svg>
+          InduLink<span class="wordmark__dot">.</span>
+        </a>
+        <p>From industry challenges to industry-ready talent. An explainable decision-support tool, not a guarantee of ability, success or employability.</p>
+      </div>
+      <div class="footer__col">
+        <h3>Platform</h3>
+        <ul>
+          <li><a href="/how-it-works">How it works</a></li>
+          <li><a href="/register?role=student">For students</a></li>
+          <li><a href="/register?role=industry">For industry</a></li>
+          <li><a href="/register?role=mentor">For mentors</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h3>Trust</h3>
+        <ul>
+          <li><a href="/privacy">Privacy</a></li>
+          <li><a href="/terms">Terms and confidentiality</a></li>
+          <li><a href="/#how-recommendations-work">How recommendations work</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h3>Access</h3>
+        <ul>
+          <li><a href="/sign-in">Sign in</a></li>
+          <li><a href="/register">Create an account</a></li>
+          <li><a href="/forgot-password">Password help</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer__base">
+      <span>InduLink · Prototype build · All demo records are synthetic</span>
+      <span>Terms to be confirmed by your institution</span>
+    </div>
+  </footer>
+  {% endblock %}
+
+  <div class="toast-region" id="toast-region" role="status" aria-live="polite"></div>
+  <script src="/static/js/app.js?v={{ asset_v }}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

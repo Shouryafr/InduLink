@@ -1,0 +1,103 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty, freshness %}
+{% block title %}Mentor overview — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Mentor workspace</p>
+  <h1 class="page-head__title">{{ user.display_name or 'Mentor overview' }}</h1>
+  <p class="page-head__sub">Workload is measured in hours against your own weekly cap, not in project count alone.</p>
+</div>
+{% endblock %}
+
+{% block page %}
+<div class="grid grid--halves">
+
+  <section class="card" aria-labelledby="workload-heading">
+    <div class="card__head">
+      <div>
+        <h2 class="card__title" id="workload-heading">Workload</h2>
+        <p class="card__sub">Threshold for “high utilization” is a documented constant, shown here.</p>
+      </div>
+      {{ status_chip(workload.label, workload.tone) }}
+    </div>
+
+    <p class="figure figure--lg" style="margin:8px 0 4px">{{ workload.utilization_pct }}<span class="small muted" style="font-family:var(--font-ui);font-size:var(--fs-18)">%</span></p>
+    <p class="small muted" style="margin:0 0 16px">
+      {{ workload.hours_per_week }} of {{ workload.weekly_cap }} weekly hours committed
+    </p>
+
+    <div class="meter" role="img" aria-label="Utilization {{ workload.utilization_pct }} percent">
+      <div class="meter__fill{% if workload.at_capacity %} meter__fill--risk{% elif workload.high_utilization %} meter__fill--risk{% elif workload.utilization_pct > 0 %} meter__fill--ok{% endif %}"
+           style="width:{{ [workload.utilization_pct, 100]|min }}%"></div>
+    </div>
+
+    <dl class="small" style="display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:20px 0 0">
+      <dt class="muted">Active projects</dt>
+      <dd style="margin:0">{{ workload.active_projects }} of {{ workload.max_active_projects }}</dd>
+      <dt class="muted">Capacity remaining</dt>
+      <dd style="margin:0">{{ workload.capacity_remaining }} project(s)</dd>
+      <dt class="muted">Hours per project</dt>
+      <dd style="margin:0">{{ mentor.hours_per_project if mentor.hours_per_project is not none else '—' }}</dd>
+    </dl>
+
+    <p style="margin:20px 0 0"><a class="btn btn--secondary btn--sm" href="/mentor/registry">Adjust capacity</a></p>
+  </section>
+
+  <section class="card" aria-labelledby="queue-heading">
+    <div class="card__head">
+      <div>
+        <h2 class="card__title" id="queue-heading">Evidence awaiting review</h2>
+        <p class="card__sub">Oldest first, so nothing ages out of view.</p>
+      </div>
+      <a class="btn btn--quiet btn--sm" href="/mentor/evidence">Open queue</a>
+    </div>
+
+    {% if queue %}
+    <ul class="stack" style="list-style:none;padding:0;margin:0;max-width:none">
+      {% for row in queue %}
+      <li style="border-top:1px solid var(--line);padding-top:12px">
+        <div class="split">
+          <div>
+            <p style="margin:0;font-weight:600;font-size:var(--fs-14)">
+              {{ row.student.user.display_name if row.student and row.student.user else 'Student' }}
+            </p>
+            <p class="small muted" style="margin:2px 0 0">
+              {{ row.category|replace('_', ' ') }} · {{ row.evidence_date|datefmt }}
+            </p>
+          </div>
+          {{ status_chip('Awaiting review', 'warn') }}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+      {{ empty("Queue is clear", "Nothing is waiting for review right now.", "/mentor/evidence", "Open the queue", "check-circle") }}
+    {% endif %}
+  </section>
+</div>
+
+<div class="grid grid--halves" style="margin-top:24px">
+  <section class="card">
+    <h2 class="card__title">Registry summary</h2>
+    <p class="card__sub">Structured skill tags only — free text is never matchable.</p>
+    <p class="figure figure--md" style="margin:16px 0 4px">{{ skill_count }}</p>
+    <p class="small muted" style="margin:0">skills registered with a level and an evidence basis.</p>
+    <p style="margin:16px 0 0"><a class="btn btn--quiet btn--sm" href="/mentor/registry">Open registry</a></p>
+  </section>
+
+  <section class="card">
+    <h2 class="card__title">Unavailable dates</h2>
+    <p class="card__sub">Proposed meeting slots and assignments never fall inside these windows.</p>
+    {% if unavailable %}
+      <ul class="small" style="margin:16px 0 0;padding-left:18px">
+        {% for row in unavailable %}
+        <li>{{ row.from_date|datefmt }} – {{ row.to_date|datefmt }}{% if row.reason %} · {{ row.reason }}{% endif %}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="small muted" style="margin:16px 0 0">No unavailable windows recorded.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty %}
+{% block title %}Mentor — {{ project.title }} — InduLink{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="Breadcrumb">
+  <ol class="breadcrumb">
+    <li><a href="/industry">Workspace</a></li>
+    <li><a href="/industry/projects/{{ project.id }}">{{ project.title }}</a></li>
+    <li aria-current="page">Mentor</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <div class="cluster" style="margin-bottom:8px">
+    {% if confirmed %}{{ status_chip("Mentor confirmed", "ok") }}{% else %}{{ chip("No mentor confirmed", "warn", "inbox") }}{% endif %}
+  </div>
+  <h1 class="page-head__title">Mentor fit</h1>
+  <p class="page-head__sub">
+    Structured expertise against this challenge's requirements, then availability and capacity.
+    The mentor decides; the partner cannot confirm on their behalf.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if saved == 'requested' %}{{ banner("Request sent", "The mentor sees it in their requests list and decides. Only one mentor can be confirmed.", "ok") }}{% endif %}
+{% if error %}{{ banner("That request did not save", error, "risk") }}{% endif %}
+
+{% if assignments %}
+<section class="card" style="margin-bottom:24px">
+  <h2 class="card__title">Requests for this challenge</h2>
+  <div class="table-wrap" style="margin-top:12px">
+    <table class="data">
+      <caption class="visually-hidden">Mentor requests and their state</caption>
+      <thead>
+        <tr><th scope="col">Mentor</th><th scope="col">State</th><th scope="col">Reason</th><th scope="col">When</th></tr>
+      </thead>
+      <tbody>
+        {% for assignment in assignments %}
+        <tr>
+          <td>{{ mentor_names.get(assignment.mentor_id, 'Mentor ' ~ assignment.mentor_id) }}</td>
+          <td>
+            {% set tones = {"confirmed": "ok", "proposed": "warn", "declined": "risk", "cancelled": "unknown", "completed": "ok"} %}
+            {{ status_chip(assignment.state|title, tones.get(assignment.state, "unknown")) }}
+          </td>
+          <td class="small muted">{{ assignment.reason or '—' }}</td>
+          <td class="small muted">{{ assignment.created_at|dtfmt }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+<div class="stack" style="max-width:none">
+  {% for fit in fits %}
+  <section class="card" style="margin-top:0">
+    <div class="split" style="align-items:flex-start;gap:20px">
+      <div style="min-width:0">
+        <div class="cluster" style="margin-bottom:6px">
+          {{ status_chip(fit.status_text, fit.tone) }}
+          <span class="small muted">{{ fit.active_projects }}/{{ fit.max_projects }} projects · {{ fit.weekly_hours }}/{{ fit.weekly_cap }} hrs/week</span>
+        </div>
+        <h2 class="card__title" style="margin:0">{{ fit.name }}</h2>
+        <p class="small muted" style="margin:4px 0 0">
+          Covers {{ fit.covered|length }} requirement(s){% if fit.gaps %} · gaps: {{ fit.gaps|join(', ') }}{% endif %}
+        </p>
+      </div>
+      <div style="text-align:right;flex:0 0 auto">
+        <p class="figure figure--md" style="margin:0">{{ fit.score }}</p>
+        <p class="small muted" style="margin:0">requirement points</p>
+        {% if fit.eligible and not confirmed %}
+        <form method="post" action="/industry/projects/{{ project.id }}/mentor" style="margin-top:12px">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="mentor_id" value="{{ fit.mentor_id }}">
+          <input type="hidden" name="reason" value="Chosen from the mentor fit list for {{ project.title }}">
+          <button class="btn btn--secondary btn--sm" type="submit">Request this mentor</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    <details class="why" style="margin-top:14px">
+      <summary>Why this fit</summary>
+      <div class="why__body">
+        <ul class="small stack-sm" style="margin:0;padding-left:18px">
+          {% for reason in fit.reasons %}<li>{{ reason }}</li>{% endfor %}
+        </ul>
+        {% if fit.unavailable_until %}
+        <p class="small" style="margin:10px 0 0">Recorded unavailable until {{ fit.unavailable_until|datefmt }}.</p>
+        {% endif %}
+      </div>
+    </details>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

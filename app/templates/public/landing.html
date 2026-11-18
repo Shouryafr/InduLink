@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+{% from "components/macros.html" import icon, status_chip, chip %}
+
+{% block title %}InduLink — from industry challenges to industry-ready talent{% endblock %}
+
+{% block styles %}<link rel="stylesheet" href="/static/css/landing.css?v={{ asset_v }}">{% endblock %}
+
+{% block content %}
+
+<section class="hero">
+  <div class="hero__inner">
+    <div>
+      <p class="hero__eyebrow">Academia–industry matching</p>
+      <h1 class="hero__title">From industry challenges to industry-ready talent.</h1>
+      <p class="hero__lede">
+        InduLink turns an industry challenge into structured requirements, matches it against
+        evidence-backed student skills, recommends complementary teams and mentors, and records
+        what was actually verified afterwards.
+      </p>
+      <div class="hero__actions">
+        <a class="btn btn--primary" href="/register">Create an account {{ icon("arrow-right", "btn__icon") }}</a>
+        <a class="btn btn--secondary" href="/how-it-works">See how decisions are made</a>
+      </div>
+      <p class="hero__note">
+        An explainable decision-support tool. Every score shows its components, weights and gaps —
+        and a person makes the final call.
+      </p>
+    </div>
+
+    <aside class="hero__panel" aria-label="Example of an explained recommendation">
+      <div class="hero__panel-head">
+        <p class="hero__panel-title">Why this score · example</p>
+        {{ chip("Synthetic", "", "info") }}
+      </div>
+
+      <div class="hero__panel-row">
+        <div>
+          <span class="hero__panel-name">Confirmed</span>
+          <span class="hero__panel-meta">Reviewed or verified evidence only</span>
+        </div>
+        <span class="hero__panel-value">64</span>
+      </div>
+      <div class="hero__panel-row">
+        <div>
+          <span class="hero__panel-name">Provisional</span>
+          <span class="hero__panel-meta">Adds declared levels, labelled as provisional</span>
+        </div>
+        <span class="hero__panel-value" style="color:var(--warn)">82</span>
+      </div>
+
+      <ul class="contrib" style="margin-top:var(--s-4)">
+        <li>
+          <div class="contrib__head">
+            <span class="contrib__name">Python · required 3 · weight 35%</span>
+            <span class="contrib__pts">35.0 pts</span>
+          </div>
+          <div class="contrib__track"><div class="contrib__fill" style="width:100%"></div></div>
+        </li>
+        <li>
+          <div class="contrib__head">
+            <span class="contrib__name">PostgreSQL · required 3 · weight 25%</span>
+            <span class="contrib__pts">12.5 pts</span>
+          </div>
+          <div class="contrib__track"><div class="contrib__fill" style="width:50%"></div></div>
+        </li>
+        <li>
+          <div class="contrib__head">
+            <span class="contrib__name">Networking · required 3 · weight 20% · mandatory</span>
+            <span class="contrib__pts">No data</span>
+          </div>
+          <div class="contrib__track"><div class="contrib__fill contrib__fill--gap" style="width:100%"></div></div>
+        </li>
+      </ul>
+
+      <div class="hero__panel-foot">
+        {{ status_chip("Provisionally eligible", "warn") }}
+        <p style="margin:var(--s-2) 0 0">
+          One mandatory skill has no evidence. Unknown is never treated as zero, and a high
+          provisional score never overrides a failed mandatory requirement.
+        </p>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="workflow-heading">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">The connected workflow</p>
+      <h2 id="workflow-heading">One chain, from brief to verified competency</h2>
+      <p>
+        A challenge is submitted and its requirements approved first. Everything after that runs
+        on evidence rather than claims.
+      </p>
+    </div>
+    <ol class="workflow">
+      <li data-first="true">
+        <span class="workflow__label">Evidence</span>
+        <span class="workflow__body">Evidence is submitted, then reviewed against a written level rubric.</span>
+      </li>
+      <li>
+        <span class="workflow__label">Match</span>
+        <span class="workflow__body">Hard constraints are checked first; soft scores explain the rest.</span>
+      </li>
+      <li>
+        <span class="workflow__label">Team</span>
+        <span class="workflow__body">Teams are scored as a whole — complementary coverage, not star individuals.</span>
+      </li>
+      <li>
+        <span class="workflow__label">Mentor</span>
+        <span class="workflow__body">Mentor fit is ranked on expertise, domain, capacity and availability.</span>
+      </li>
+      <li>
+        <span class="workflow__label">Execution</span>
+        <span class="workflow__body">Tasks, milestones and deliverables are tracked with versioned requirements.</span>
+      </li>
+      <li>
+        <span class="workflow__label">Verified competencies</span>
+        <span class="workflow__body">Outcomes are reviewed and recorded on a scoped skill passport.</span>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="section section--tight" id="roles" style="background:var(--surface);border-block:1px solid var(--line)" aria-labelledby="roles-heading">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Built for four roles</p>
+      <h2 id="roles-heading">Each role sees its own screens, and only its own records</h2>
+      <p>Authorization is enforced on the server for every protected read and write.</p>
+    </div>
+
+    <div class="grid grid--4">
+      <article class="role-card">
+        <p class="role-card__tag">For students</p>
+        <h3>Know what you qualify for</h3>
+        <ul>
+          <li>See which opportunities you are eligible for now, and which you could work towards.</li>
+          <li>Turn a skill gap into an ordered roadmap, with the evidence step that closes it.</li>
+          <li>Publish a scoped passport only when you choose to.</li>
+        </ul>
+        <p class="role-card__foot"><a href="/register?role=student">Create a student account</a></p>
+      </article>
+
+      <article class="role-card">
+        <p class="role-card__tag">For industry</p>
+        <h3>Brief in, requirements out</h3>
+        <ul>
+          <li>Structure a challenge into skills, levels and weights you can defend.</li>
+          <li>See ranked candidates with the reason each one is eligible or is not.</li>
+          <li>Keep every requirement version, and see what a change displaced.</li>
+        </ul>
+        <p class="role-card__foot"><a href="/register?role=industry">Create a partner account</a></p>
+      </article>
+
+      <article class="role-card">
+        <p class="role-card__tag">For mentors</p>
+        <h3>Review, guide, and stay inside capacity</h3>
+        <ul>
+          <li>Assess evidence against written level definitions, never a bare number.</li>
+          <li>See workload in hours against your own weekly cap.</li>
+          <li>Decline an assignment without it being silently reassigned.</li>
+        </ul>
+        <p class="role-card__foot"><a href="/register?role=mentor">Create a mentor account</a></p>
+      </article>
+
+      <article class="role-card">
+        <p class="role-card__tag">For administrators</p>
+        <h3>Oversight with a paper trail</h3>
+        <ul>
+          <li>Approve challenges and requirements, with versioned history.</li>
+          <li>Review evidence decisions and, where needed, the audit log.</li>
+          <li>Read demand and coverage as platform data, clearly scoped.</li>
+        </ul>
+        <p class="role-card__foot"><a href="/sign-in">Administrator sign-in</a></p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="how-recommendations-work" aria-labelledby="honest-heading">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Honest by design</p>
+      <h2 id="honest-heading">How recommendations work</h2>
+      <p>
+        Rules and arithmetic, not a model. Nothing here predicts whether a student will succeed,
+        and nothing here replaces a human decision.
+      </p>
+    </div>
+
+    <ol class="honest">
+      <li>
+        <span class="honest__title">Hard constraints come first</span>
+        <span class="honest__body">
+          Mandatory skills, eligibility, availability and capacity are pass/fail checks that run
+          before any score. A high score never overrides a failed mandatory requirement.
+        </span>
+      </li>
+      <li>
+        <span class="honest__title">Unknown is not zero</span>
+        <span class="honest__body">
+          A skill with no evidence is shown as no data, not as a failure. Every match shows a
+          confirmed score and a provisional score side by side.
+        </span>
+      </li>
+      <li>
+        <span class="honest__title">Six separate fields</span>
+        <span class="honest__body">
+          Declared level, assessed level, evidence status, match score, readiness and mentor fit
+          are stored and displayed separately. They are never merged into one number.
+        </span>
+      </li>
+      <li>
+        <span class="honest__title">Every number is explainable</span>
+        <span class="honest__body">
+          Each recommendation shows its components, weights, gaps, data limitations and when the
+          underlying record was last updated.
+        </span>
+      </li>
+      <li>
+        <span class="honest__title">People confirm, software proposes</span>
+        <span class="honest__body">
+          Confirmations are explicit, reversible and audited. No confirmed assignment is ever
+          replaced silently, and every correction needs a written reason.
+        </span>
+      </li>
+      <li>
+        <span class="honest__title">No-fit is a real answer</span>
+        <span class="honest__body">
+          When nothing satisfies the constraints, InduLink says so and lists clearly-labelled near
+          matches. It never fabricates a recommendation to fill the space.
+        </span>
+      </li>
+    </ol>
+
+    <div class="notice" style="margin-top:var(--s-8)">
+      <svg class="notice__icon" aria-hidden="true" focusable="false"><use href="#i-info"></use></svg>
+      <div>
+        <h3>Synthetic demo data</h3>
+        <p>
+          Every record in this environment is synthetic: fictional students, mentors, companies and
+          projects. Synthetic data can demonstrate behaviour. It cannot establish real-world
+          effectiveness, and nothing in this prototype should be read as a claim that it does.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section--tight" style="border-top:1px solid var(--line)">
+  <div class="container" style="display:flex;flex-wrap:wrap;gap:var(--s-5);align-items:center;justify-content:space-between">
+    <div>
+      <h2 style="margin-bottom:var(--s-2)">Start with a challenge, or with your evidence.</h2>
+      <p class="muted" style="margin:0">Accounts are free in this prototype and every role can be explored.</p>
+    </div>
+    <div class="cluster">
+      <a class="btn btn--primary" href="/register">Create an account</a>
+      <a class="btn btn--secondary" href="/sign-in">Sign in</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

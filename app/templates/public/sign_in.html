@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% from "components/macros.html" import icon %}
+{% block title %}Sign in — InduLink{% endblock %}
+{% block styles %}<link rel="stylesheet" href="/static/css/landing.css?v={{ asset_v }}">{% endblock %}
+
+{% block chrome %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="auth{% if demo_mode %} auth--demo{% endif %}">
+  <aside class="auth__aside">
+    <a class="wordmark" href="/">
+      <svg class="wordmark__mark" aria-hidden="true" focusable="false"><use href="#i-mark"></use></svg>
+      InduLink<span class="wordmark__dot">.</span>
+    </a>
+
+    <div class="auth__pitch">
+      <p class="auth__eyebrow">Decision support for universities and industry</p>
+      <h1>Structured challenges. Evidence-backed matches.</h1>
+      <blockquote>
+        “Compatibility is not a probability of selection or success.”
+        <cite>Shown beside every match score</cite>
+      </blockquote>
+      <ul class="auth__points">
+        <li>{{ icon("check", "auth__point-icon") }}Challenges become structured requirements the partner approves.</li>
+        <li>{{ icon("check", "auth__point-icon") }}Evidence is reviewed by a mentor, never inferred from a profile.</li>
+        <li>{{ icon("check", "auth__point-icon") }}Every match shows the gaps behind its score.</li>
+      </ul>
+    </div>
+
+    <p class="auth__note">
+      Synthetic demo data. Behaviour can be demonstrated; real-world effectiveness cannot.
+    </p>
+  </aside>
+
+  <div class="auth__main">
+    <div class="auth__card">
+      <a class="wordmark" href="/" style="margin-bottom:20px">
+        <svg class="wordmark__mark" aria-hidden="true" focusable="false"><use href="#i-mark"></use></svg>
+        InduLink<span class="wordmark__dot">.</span>
+      </a>
+
+      <h2>Sign in</h2>
+      <p class="auth__sub">Use the account your institution or organisation set up for you.</p>
+
+      {% if error %}
+      <div class="banner banner--risk" role="alert">
+        <svg class="banner__icon" aria-hidden="true"><use href="#i-alert-octagon"></use></svg>
+        <div><p class="banner__text">{{ error }}</p></div>
+      </div>
+      {% endif %}
+
+      <form method="post" action="/sign-in" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="next" value="{{ next_url }}">
+
+        <div class="field">
+          <label class="field__label" for="email">E-mail address</label>
+          <input class="input" type="email" id="email" name="email" value="" required
+                 autocomplete="username" aria-required="true">
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="password">Password</label>
+          <input class="input" type="password" id="password" name="password" required
+                 autocomplete="current-password" aria-required="true">
+          <span class="field__help">
+            <a href="/forgot-password">Forgotten your password?</a>
+          </span>
+        </div>
+
+        <button class="btn btn--primary btn--block" type="submit">Sign in</button>
+      </form>
+
+      <p class="auth__alt">
+        No account yet? <a href="/register">Create one</a>
+      </p>
+
+      {% if demo_mode %}
+      <div class="auth__demos">
+        <p class="auth__demos-head">Demo sign-in · synthetic accounts</p>
+        <p class="auth__demos-pass">
+          <span>Password for all four accounts</span>
+          <code>{{ demo_password }}</code>
+        </p>
+        <ul class="auth__demos-list">
+          {% for persona in demo_logins %}
+          <li class="auth__demos-item">
+            <span class="auth__demos-line">
+              <span class="auth__demos-role">{{ ROLE_LABELS.get(persona.role, persona.role|capitalize) }}</span>
+              <span class="auth__demos-name">{{ persona.name }}</span>
+            </span>
+            <code class="auth__demos-email">{{ persona.email }}</code>
+          </li>
+          {% endfor %}
+        </ul>
+        <p class="auth__demos-foot">
+          These accounts exist only while demo mode is on.
+        </p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

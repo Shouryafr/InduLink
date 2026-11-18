@@ -1,0 +1,115 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty %}
+{% block title %}Evidence oversight — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Assurance</p>
+  <h1 class="page-head__title">Evidence oversight</h1>
+  <p class="page-head__sub">
+    Every evidence item, its status, and the two queues that matter: decisions waiting, and
+    practical evidence old enough to prompt a re-review. Old evidence is never invalidated automatically.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+<div class="grid grid--2" style="margin-bottom:24px">
+  <section class="card">
+    <div class="card__head">
+      <div>
+        <h2 class="card__title">Awaiting a decision</h2>
+        <p class="card__sub">Oldest first.</p>
+      </div>
+      {{ status_chip(review_queue|length|string ~ " open", "warn") }}
+    </div>
+    {% if review_queue %}
+      <ul class="stack-sm" style="list-style:none;padding:0;margin:0;max-width:none">
+        {% for row in review_queue %}
+        <li style="border-top:1px solid var(--line);padding-top:10px" class="split">
+          <span class="small">
+            {{ row.student.user.display_name if row.student and row.student.user else 'Student' }}
+            · {{ row.category|replace('_', ' ') }}
+          </span>
+          <span class="small muted">{{ row.evidence_date|datefmt }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="small muted" style="margin:0">Nothing waiting.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <div class="card__head">
+      <div>
+        <h2 class="card__title">Consider re-review</h2>
+        <p class="card__sub">Practical evidence older than a year.</p>
+      </div>
+      {{ status_chip(revalidation|length|string ~ " aged", "info") }}
+    </div>
+    {% if revalidation %}
+      <ul class="stack-sm" style="list-style:none;padding:0;margin:0;max-width:none">
+        {% for row in revalidation %}
+        <li style="border-top:1px solid var(--line);padding-top:10px" class="split">
+          <span class="small">
+            {{ row.student.user.display_name if row.student and row.student.user else 'Student' }}
+            · {{ row.category|replace('_', ' ') }}
+          </span>
+          <span class="small muted">{{ row.evidence_date|datefmt }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="small muted" style="margin:0">Nothing aged past the threshold.</p>
+    {% endif %}
+  </section>
+</div>
+
+<section class="card" aria-labelledby="all-heading">
+  <div class="card__head">
+    <div>
+      <h2 class="card__title" id="all-heading">All evidence</h2>
+      <p class="card__sub">Review notes are visible to administrators, the student and the reviewer.</p>
+    </div>
+  </div>
+
+  {% if items %}
+  <div class="table-wrap">
+    <table class="data">
+      <caption class="visually-hidden">All evidence items, newest first</caption>
+      <thead>
+        <tr>
+          <th scope="col">Student</th>
+          <th scope="col">Skill</th>
+          <th scope="col">Type</th>
+          <th scope="col">Date</th>
+          <th scope="col" class="num">Level</th>
+          <th scope="col">Status</th>
+          <th scope="col">Reviewer</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.student_name }}</td>
+          <td><strong>{{ item.skill_name }}</strong></td>
+          <td class="small">{{ item.category_label }}</td>
+          <td class="num small">{{ item.evidence_date|datefmt }}</td>
+          <td class="num">{{ item.demonstrated_level if item.demonstrated_level else '—' }}</td>
+          <td>
+            {% if item.status in ['reviewed', 'verified'] %}{{ status_chip(item.status_label, 'ok') }}
+            {% elif item.status == 'rejected' %}{{ status_chip(item.status_label, 'risk') }}
+            {% else %}{{ status_chip(item.status_label, 'warn') }}{% endif %}
+          </td>
+          <td class="small muted">{{ item.reviewer_name or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    {{ empty("No evidence yet", "Students' evidence items appear here once submitted.", "", "", "file-text") }}
+  {% endif %}
+</section>
+{% endblock %}

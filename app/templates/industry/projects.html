@@ -1,0 +1,62 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty, state_chip, visibility_chip %}
+{% block title %}My challenges — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Challenges</p>
+  <h1 class="page-head__title">My challenges</h1>
+  <p class="page-head__sub">
+    Every challenge keeps its full requirement history. Editing an approved challenge creates a new
+    version; the version students were matched against is never rewritten.
+  </p>
+  <div class="cluster" style="margin-top:20px">
+    <a class="btn btn--primary" href="/industry/projects/new">{{ icon("plus", "btn__icon") }} New challenge</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if projects %}
+<div class="table-wrap">
+  <table class="data">
+    <caption class="visually-hidden">Challenges you have created</caption>
+    <thead>
+      <tr>
+        <th scope="col">Challenge</th>
+        <th scope="col">State</th>
+        <th scope="col">Visibility</th>
+        <th scope="col" class="num">Versions</th>
+        <th scope="col" class="num">Deadline</th>
+        <th scope="col">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for project in projects %}
+      <tr>
+        <td>
+          <a href="/industry/projects/{{ project.id }}"><strong>{{ project.title }}</strong></a>
+          <span class="small muted" style="display:block">
+            {{ project.domain or 'No domain set' }} · team of {{ project.team_size_min }}–{{ project.team_size_max }}
+          </span>
+        </td>
+        <td>{{ state_chip(project.state) }}</td>
+        <td>{{ visibility_chip(project.visibility) }}</td>
+        <td class="num">{{ version_counts.get(project.id, 0) }}</td>
+        <td class="num small">{{ project.deadline|datefmt }}</td>
+        <td>
+          <a class="btn btn--quiet btn--sm" href="/industry/projects/{{ project.id }}">Open</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="small muted" style="margin:16px 0 0">
+  {{ projects|length }} challenge{{ '' if projects|length == 1 else 's' }}. Drafts are editable; submitted
+  challenges are locked until an administrator returns them.
+</p>
+{% else %}
+  {{ empty("No challenges yet", "Structure your first brief into skills, levels and weights. It stays a draft until you submit it for approval.", "/industry/projects/new", "Create a challenge", "briefcase") }}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Privacy — InduLink{% endblock %}
+{% block styles %}<link rel="stylesheet" href="/static/css/landing.css?v={{ asset_v }}">{% endblock %}
+
+{% block content %}
+<div class="container container--narrow section">
+  <p class="eyebrow">Privacy</p>
+  <h1>Privacy notice</h1>
+  <p class="lede">
+    This is a prototype running on synthetic demo data. It has not been through an institutional
+    privacy review, and it must not hold real student or company data until it has.
+  </p>
+
+  <hr class="gold-rule">
+
+  <div class="banner banner--warn" role="alert" style="margin-bottom:32px">
+    <svg class="banner__icon" aria-hidden="true"><use href="#i-alert-triangle"></use></svg>
+    <div>
+      <p class="banner__title">Not for real data yet</p>
+      <p class="banner__text">
+        Every record in this environment is synthetic. Do not enter personal data about a real
+        person, or confidential material from a real organisation.
+      </p>
+    </div>
+  </div>
+
+  <h2>What is collected</h2>
+  <ul>
+    <li>Account details: e-mail address, display name, role and a password stored as a bcrypt hash.</li>
+    <li>Profile detail you choose to enter: skills, interests, coursework, experience, availability.</li>
+    <li>Evidence you submit, and the review notes a reviewer writes about it.</li>
+    <li>Challenge and project records, including requirement versions and confirmed assignments.</li>
+    <li>Security events: sign-in attempts, authorization denials, and changes to important records.</li>
+  </ul>
+
+  <h2>Who can see it</h2>
+  <ul>
+    <li><strong>Your profile</strong> is private by default. You choose whether it is visible to your institution or public.</li>
+    <li><strong>Evidence review notes</strong> are visible only to you, the reviewer and administrators.</li>
+    <li><strong>Evaluations and feedback</strong> are restricted to the authorised roles for that project.</li>
+    <li><strong>Confidential files</strong> require an acknowledgement before access, and every access is audited.</li>
+    <li><strong>Administrators</strong> can read the audit log. They cannot edit or delete it.</li>
+  </ul>
+
+  <h2>Retention</h2>
+  <p>
+    Session records expire 30 days after sign-in and are revoked on sign-out or a password change.
+    Audit events are retained and append-only. Accounts are anonymised rather than deleted, so
+    history stays consistent. Retention windows are configurable by an administrator.
+  </p>
+
+  <h2>Your controls</h2>
+  <ul>
+    <li>Change what your profile exposes, at any time, from your profile page.</li>
+    <li>Ask an administrator to export or delete your data (this build does not yet automate it).</li>
+    <li>Appeal any contribution or passport entry you believe is wrong.</li>
+  </ul>
+
+  <h2>Security choices worth stating plainly</h2>
+  <ul>
+    <li>Passwords are hashed with bcrypt at cost 12; plaintext passwords are never stored or logged.</li>
+    <li>Authorization is enforced on the server for every protected read and write, not by hiding buttons.</li>
+    <li>Uploaded files are checked by content, stored outside the web root, and never executed.</li>
+    <li>This build makes no claim to be free of security flaws. Residual risks are listed in the repository's RISKS.md.</li>
+  </ul>
+
+  <p class="small muted" style="margin-top:32px">
+    This notice describes a prototype. It is not legal advice and it is not a substitute for your
+    institution's own privacy notice.
+  </p>
+</div>
+{% endblock %}

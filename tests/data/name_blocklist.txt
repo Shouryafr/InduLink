@@ -1,0 +1,27 @@
+# Full names of real public figures that must never appear in synthetic data.
+# One name per line. Used by tests/integration/test_demo_dataset.py.
+Narendra Modi
+Amit Shah
+Rahul Gandhi
+Sonia Gandhi
+Arvind Kejriwal
+Bhagat Singh
+Indira Gandhi
+Jawaharlal Nehru
+Sachin Tendulkar
+Virat Kohli
+Rohit Sharma
+Kapil Dev
+MS Dhoni
+Amitabh Bachchan
+Shah Rukh Khan
+Salman Khan
+Aamir Khan
+Priyanka Chopra
+Deepika Padukone
+Alia Bhatt
+Kareena Kapoor
+Ranbir Kapoor
+Anushka Sharma
+Nawaz Sharif
+Imran Khan

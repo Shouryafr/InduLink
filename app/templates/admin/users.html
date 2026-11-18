@@ -1,0 +1,83 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty %}
+{% block title %}Users — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Accounts</p>
+  <h1 class="page-head__title">Users and account status</h1>
+  <p class="page-head__sub">
+    Status is checked on every request. Suspending an account ends its access immediately; deleting
+    is never offered, so history stays consistent.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if saved == 'status' %}{{ banner("Status updated", "The change is recorded with the actor, time and reason.", "ok") }}{% endif %}
+
+<div class="cluster" style="margin-bottom:16px">
+  <a class="btn {{ 'btn--primary' if not filter_role else 'btn--secondary' }} btn--sm" href="/admin/users">All</a>
+  {% for role in ['student', 'mentor', 'industry', 'admin'] %}
+  <a class="btn {{ 'btn--primary' if filter_role == role else 'btn--secondary' }} btn--sm" href="/admin/users?role={{ role }}">{{ ROLE_LABELS[role] }}</a>
+  {% endfor %}
+</div>
+
+{% if users %}
+<div class="table-wrap">
+  <table class="data">
+    <caption class="visually-hidden">Accounts, newest first</caption>
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">E-mail</th>
+        <th scope="col">Role</th>
+        <th scope="col">Status</th>
+        <th scope="col">Last sign-in</th>
+        <th scope="col">Change status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in users %}
+      <tr>
+        <td>
+          <strong>{{ row.display_name or '—' }}</strong>
+          {% if row.is_synthetic %}<span class="small muted" style="display:block">Synthetic record</span>{% endif %}
+        </td>
+        <td class="small">{{ row.email }}</td>
+        <td>{{ ROLE_LABELS.get(row.role, row.role) }}</td>
+        <td>
+          {% if row.status == 'active' %}{{ status_chip("Active", "ok") }}
+          {% elif row.status == 'suspended' %}{{ status_chip("Suspended", "risk") }}
+          {% else %}{{ status_chip("Pending", "warn") }}{% endif %}
+        </td>
+        <td class="small muted">{{ row.last_signed_in_at|dtfmt }}</td>
+        <td>
+          {% if row.id == user.id %}
+            <span class="small muted">Your own account</span>
+          {% else %}
+          <form method="post" action="/admin/users/{{ row.id }}/status" class="cluster cluster-sm"
+                data-confirm="Change this account's status? Access changes on the next request.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <select class="select" name="status" aria-label="New status for {{ row.email }}" style="width:auto;min-width:120px;padding:6px 32px 6px 10px;font-size:var(--fs-14)">
+              <option value="active" {% if row.status == 'active' %}selected{% endif %}>Active</option>
+              <option value="suspended" {% if row.status == 'suspended' %}selected{% endif %}>Suspended</option>
+              <option value="pending" {% if row.status == 'pending' %}selected{% endif %}>Pending</option>
+            </select>
+            <input class="input" type="text" name="reason" required maxlength="200"
+                   placeholder="Reason" aria-label="Reason for status change"
+                   style="width:140px;padding:6px 10px;font-size:var(--fs-14)">
+            <button class="btn btn--secondary btn--sm" type="submit">Apply</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="small muted" style="margin-top:12px">{{ users|length }} account(s) shown, newest first.</p>
+{% else %}
+  {{ empty("No accounts", "Accounts appear here as people register or an administrator creates them.", "", "", "users") }}
+{% endif %}
+{% endblock %}

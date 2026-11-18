@@ -1,0 +1,167 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, state_chip, visibility_chip %}
+{% block title %}{{ project.title }} — InduLink{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="Breadcrumb">
+  <ol class="breadcrumb">
+    <li><a href="/student">Workspace</a></li>
+    <li><a href="/student/projects">Challenges</a></li>
+    <li aria-current="page">{{ project.title }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <div class="cluster" style="margin-bottom:8px">
+    {{ state_chip(project.state) }}
+    {{ visibility_chip(project.visibility) }}
+    {{ status_chip(result.eligibility_text, result.eligibility_tone) }}
+  </div>
+  <h1 class="page-head__title">{{ project.title }}</h1>
+  <p class="page-head__sub">
+    {{ project.domain or 'No domain' }} · {{ project.team_size_min }}–{{ project.team_size_max }} people ·
+    {{ project.start_date|datefmt }} to {{ project.deadline|datefmt }} ({{ project.timezone }})
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if confirmed_team %}
+  {{ banner("You are on the confirmed team", "Your place is recorded. A passport entry becomes available from the Skill passport screen.", "ok") }}
+{% endif %}
+
+<div class="grid grid--split">
+  <div>
+    <section class="card" aria-labelledby="why-heading">
+      <div class="card__head">
+        <div>
+          <h2 class="card__title" id="why-heading">Why this score</h2>
+          <p class="card__sub">Hard constraints first, then weighted evidence. Every number states where it came from.</p>
+        </div>
+        <div style="text-align:right">
+          <p class="figure figure--lg" style="margin:0">{{ result.score }}</p>
+          <p class="small muted" style="margin:0">of 100</p>
+        </div>
+      </div>
+
+      <h3 class="card__title" style="font-size:var(--fs-18);margin:8px 0 0">Hard constraints</h3>
+      <ul class="stack-sm" style="list-style:none;padding:0;margin:12px 0 0;max-width:none">
+        {% for constraint in result.constraints %}
+        <li style="border-top:1px solid var(--line);padding-top:10px">
+          <div class="split" style="align-items:flex-start">
+            <div style="max-width:56ch">
+              <p style="margin:0 0 2px;font-weight:600">{{ constraint.label }}</p>
+              <p class="small muted" style="margin:0">{{ constraint.detail }}</p>
+            </div>
+            {{ status_chip(constraint.outcome_text, constraint.tone) }}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+
+      <h3 class="card__title" style="font-size:var(--fs-18);margin:24px 0 0">Weighted skill evidence</h3>
+      {% if result.rows %}
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="visually-hidden">Each requirement, your level, the outcome and the points it contributed</caption>
+          <thead>
+            <tr>
+              <th scope="col">Requirement</th>
+              <th scope="col" class="num">Required</th>
+              <th scope="col" class="num">Your level</th>
+              <th scope="col">Check</th>
+              <th scope="col" class="num">Points</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in result.rows %}
+            <tr>
+              <td>
+                <strong>{{ row.skill_name }}</strong>
+                <span class="small muted" style="display:block">weight {{ (row.weight * 100)|round|int }}%{% if row.is_mandatory %} · mandatory{% endif %}</span>
+              </td>
+              <td class="num">{{ row.required_level }}</td>
+              <td class="num">{{ row.level if row.level is not none else '—' }}</td>
+              <td>{{ status_chip(row.outcome_text, row.tone) }}</td>
+              <td class="num">{{ row.points }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <details class="why" style="margin-top:16px">
+        <summary>Read the reasoning for every row</summary>
+        <div class="why__body">
+          <ul class="small stack-sm" style="margin:0;padding-left:18px">
+            {% for row in result.rows %}<li>{{ row.note }}</li>{% endfor %}
+          </ul>
+        </div>
+      </details>
+      {% else %}
+      <p class="small muted">This challenge has no requirements recorded.</p>
+      {% endif %}
+
+      {% if result.caveats %}
+      <div class="banner banner--warn" style="margin-top:20px" role="status">
+        <svg class="banner__icon" aria-hidden="true"><use href="#i-alert-triangle"></use></svg>
+        <div>
+          <p class="banner__title">Caveats, not refusals</p>
+          <ul class="banner__text" style="margin:6px 0 0;padding-left:18px">
+            {% for caveat in result.caveats %}<li>{{ caveat }}</li>{% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endif %}
+    </section>
+
+    <section class="card" style="margin-top:24px">
+      <h2 class="card__title">The brief</h2>
+      <p style="margin-top:16px;white-space:pre-line">{{ project.description or 'No brief recorded.' }}</p>
+      <div class="grid grid--halves" style="margin-top:20px">
+        <div>
+          <p class="score__label">Deliverables</p>
+          <p class="small">{{ project.deliverables_summary or '—' }}</p>
+        </div>
+        <div>
+          <p class="score__label">Evaluation criteria</p>
+          <p class="small">{{ project.evaluation_criteria or '—' }}</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <aside class="stack-lg">
+    <section class="card">
+      <h2 class="card__title">Your evidence position</h2>
+      <p class="card__sub">Two numbers, kept separate.</p>
+      <p class="score__label" style="margin-top:16px">Confirmed score</p>
+      <p class="figure figure--md" style="margin:0">{{ result.confirmed_score }}</p>
+      <p class="score__label" style="margin-top:16px">Provisional score</p>
+      <p class="figure figure--md" style="margin:0">{{ result.provisional_score }}</p>
+      <p class="small muted" style="margin:16px 0 0">
+        The confirmed score counts only reviewed or verified practical evidence. The provisional
+        score also counts declared levels and certificates, so treats them as hints.
+      </p>
+      <p style="margin:16px 0 0"><a class="btn btn--secondary btn--sm" href="/student/evidence">Add evidence</a></p>
+    </section>
+
+    <section class="card">
+      <h2 class="card__title">How ranking works</h2>
+      <ul class="small stack-sm" style="margin:12px 0 0;padding-left:18px">
+        <li>Eligible candidates always rank above provisional ones, whatever the score.</li>
+        <li>A candidate who fails a mandatory requirement cannot be raised by other skills.</li>
+        <li>Unknown data contributes no points and is labelled no data.</li>
+        <li>Ties are shown as ties; order between them is by name, not by a hidden difference.</li>
+      </ul>
+      {% if snapshot %}
+      <p class="small muted" style="margin:16px 0 0">
+        The partner's last recorded ranking was generated {{ snapshot.generated_at|dtfmt }}.
+        It is kept as history, not reused as a live score.
+      </p>
+      {% endif %}
+    </section>
+  </aside>
+</div>
+{% endblock %}

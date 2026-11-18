@@ -1,0 +1,80 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, empty, freshness, skill_assessment_row %}
+{% block title %}{{ profile.user.display_name if profile.user else 'Student profile' }} — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <div class="cluster" style="margin-bottom:8px">
+    {% if profile.visibility == 'public' %}{{ chip("Public profile", "info", "users") }}
+    {% elif profile.visibility == 'university' %}{{ chip("Institution profile", "warn", "users") }}
+    {% else %}{{ chip("Private", "unknown", "lock") }}{% endif %}
+    {% if profile.is_synthetic %}{{ chip("Synthetic record", "", "info") }}{% endif %}
+  </div>
+  <h1 class="page-head__title">{{ profile.user.display_name if profile.user else 'Student' }}</h1>
+  <p class="page-head__sub">{{ profile.headline or 'No headline set.' }}</p>
+</div>
+{% endblock %}
+
+{% block page %}
+<div class="grid grid--split">
+  <section class="card">
+    <h2 class="card__title">Confirmed skills</h2>
+    <p class="card__sub">
+      Only levels confirmed by reviewed or verified evidence are shown here. Declared levels stay
+      with the student unless they choose otherwise.
+    </p>
+
+    {% if views %}
+    <div class="table-wrap" style="margin-top:16px">
+      <table class="data">
+        <caption class="visually-hidden">Confirmed skills</caption>
+        <thead>
+          <tr>
+            <th scope="col">Skill</th>
+            <th scope="col" class="num">Assessed</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for view in views %}
+          <tr>
+            <td><strong>{{ view.skill_name }}</strong></td>
+            <td class="num">{{ view.assessment.confirmed_level }}</td>
+            <td>{{ status_chip(view.assessment.label_text, view.assessment.tone) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      {{ empty("No confirmed skills to show", "This student has no evidence-reviewed skills that are shared at this visibility.", "", "", "book") }}
+    {% endif %}
+  </section>
+
+  <aside class="stack-lg">
+    <section class="card">
+      <h2 class="card__title">Availability</h2>
+      <p class="figure figure--md" style="margin:16px 0 4px">
+        {{ profile.availability_hours if profile.availability_hours is not none else '—' }}
+        <span class="small muted" style="font-family:var(--font-ui);font-size:var(--fs-14)"> hrs / week</span>
+      </p>
+      {{ freshness(availability) }}
+    </section>
+
+    <section class="card">
+      <h2 class="card__title">Preferences</h2>
+      <dl class="small" style="display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:16px 0 0">
+        <dt class="muted">Preferred roles</dt>
+        <dd style="margin:0">{{ profile.preferred_roles or '—' }}</dd>
+        <dt class="muted">Interests</dt>
+        <dd style="margin:0">{{ profile.interests or '—' }}</dd>
+      </dl>
+    </section>
+
+    <p class="small muted">
+      Compatibility is not a probability of selection or success. This page shows what the student
+      agreed to share, not an assessment of ability.
+    </p>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+# Test, coverage and HTTP-client tooling. Installed by `make install`.
+-r requirements.txt
+pytest==9.2.0
+pytest-cov==7.1.0
+coverage==7.17.0
+hypothesis==6.170.12
+httpx==0.28.1

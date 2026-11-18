@@ -1,0 +1,158 @@
+/* ==========================================================================
+   InduLink — Design tokens
+   Quiet luxury: deep ink surfaces, warm ivory paper, one restrained
+   champagne-gold accent. Light is the default; dark follows the OS or an
+   explicit [data-theme] set by the manual toggle.
+
+   Gold contrast rule (section 3 of the brief):
+   Light-mode --gold (#A8801F) does not reach 4.5:1 on ivory. It is therefore
+   permitted only for: fills that carry ink-coloured text, hairline borders,
+   focus rings, and large figures at 28px and above. Never for small body text
+   or links. Links use --ink with an underline.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces */
+  --bg: #faf7f2;
+  --surface: #ffffff;
+  --surface-sunken: #f4f0e8;
+  --ink: #14181f;
+  --ink-muted: #5c6470;
+  --line: #e7e1d6;
+  --line-strong: #d6cec0;
+
+  /* Single accent */
+  --gold: #a8801f;
+  --gold-soft: rgba(168, 128, 31, 0.1);
+  --gold-wash: rgba(168, 128, 31, 0.045);
+
+  /* Semantic status */
+  --ok: #2f6b4f;
+  --warn: #9a6a12;
+  --risk: #8f2d2d;
+  --info: #2f5d8a;
+
+  --ok-bg: rgba(47, 107, 79, 0.08);
+  --warn-bg: rgba(154, 106, 18, 0.09);
+  --risk-bg: rgba(143, 45, 45, 0.075);
+  --info-bg: rgba(47, 93, 138, 0.075);
+
+  /* Typography */
+  --font-display: 'Cormorant Garamond', 'Iowan Old Style', 'Palatino Linotype',
+    Palatino, Georgia, serif;
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+
+  --fs-14: 0.875rem;
+  --fs-16: 1rem;
+  --fs-18: 1.125rem;
+  --fs-22: 1.375rem;
+  --fs-28: 1.75rem;
+  --fs-40: 2.5rem;
+  --fs-56: 3.5rem;
+
+  --lh-body: 1.6;
+  --lh-tight: 1.15;
+  --measure: 68ch;
+
+  --tracking-caps: 0.11em;
+
+  /* 8px grid */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 40px;
+  --s-8: 48px;
+  --s-9: 64px;
+  --s-10: 88px;
+  --s-11: 120px;
+
+  /* Shape */
+  --r-card: 16px;
+  --r-input: 10px;
+  --r-pill: 999px;
+  --hairline: 1px solid var(--line);
+
+  /* One soft shadow level, for elevated menus only */
+  --shadow-menu: 0 12px 32px -12px rgba(20, 24, 31, 0.22),
+    0 2px 6px -2px rgba(20, 24, 31, 0.08);
+
+  --focus-ring: 2px solid var(--gold);
+  --focus-offset: 2px;
+
+  /* Layout */
+  --container: 1200px;
+  --topbar-h: 64px;
+  --sidebar-w: 248px;
+
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --motion-slow: 250ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --bg: #0e1116;
+    --surface: #161a22;
+    --surface-sunken: #12161d;
+    --ink: #f2eee6;
+    --ink-muted: #a3a9b3;
+    --line: #272d38;
+    --line-strong: #333a47;
+
+    --gold: #d4af5a;
+    --gold-soft: rgba(212, 175, 90, 0.14);
+    --gold-wash: rgba(212, 175, 90, 0.06);
+
+    --ok: #5fb38a;
+    --warn: #e0a83c;
+    --risk: #e5736f;
+    --info: #6fa3d8;
+
+    --ok-bg: rgba(95, 179, 138, 0.12);
+    --warn-bg: rgba(224, 168, 60, 0.13);
+    --risk-bg: rgba(229, 115, 111, 0.13);
+    --info-bg: rgba(111, 163, 216, 0.13);
+
+    --shadow-menu: 0 16px 40px -14px rgba(0, 0, 0, 0.65),
+      0 2px 8px -2px rgba(0, 0, 0, 0.5);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #0e1116;
+  --surface: #161a22;
+  --surface-sunken: #12161d;
+  --ink: #f2eee6;
+  --ink-muted: #a3a9b3;
+  --line: #272d38;
+  --line-strong: #333a47;
+
+  --gold: #d4af5a;
+  --gold-soft: rgba(212, 175, 90, 0.14);
+  --gold-wash: rgba(212, 175, 90, 0.06);
+
+  --ok: #5fb38a;
+  --warn: #e0a83c;
+  --risk: #e5736f;
+  --info: #6fa3d8;
+
+  --ok-bg: rgba(95, 179, 138, 0.12);
+  --warn-bg: rgba(224, 168, 60, 0.13);
+  --risk-bg: rgba(229, 115, 111, 0.13);
+  --info-bg: rgba(111, 163, 216, 0.13);
+
+  --shadow-menu: 0 16px 40px -14px rgba(0, 0, 0, 0.65),
+    0 2px 8px -2px rgba(0, 0, 0, 0.5);
+}

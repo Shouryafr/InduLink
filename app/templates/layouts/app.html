@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% from "components/macros.html" import icon %}
+
+{% block chrome %}
+<header class="topbar">
+  <div class="topbar__inner">
+    <a class="wordmark" href="{{ home_path }}">
+      <svg class="wordmark__mark" aria-hidden="true" focusable="false"><use href="#i-mark"></use></svg>
+      InduLink<span class="wordmark__dot">.</span>
+    </a>
+
+    <form class="search" role="search" action="/search" method="get">
+      <svg class="search__icon" aria-hidden="true" focusable="false"><use href="#i-search"></use></svg>
+      <label class="visually-hidden" for="global-search">Search InduLink</label>
+      <input class="search__input" type="search" id="global-search" name="q" placeholder="Search projects, skills, people" autocomplete="off">
+    </form>
+
+    <div class="topbar__spacer"></div>
+    <div class="topbar__actions">
+      <a class="btn btn--quiet btn--sm" href="/notifications"
+         aria-label="Notifications{% if unread_notifications %}: {{ unread_notifications }} unread{% endif %}">
+        {{ icon("bell", "btn__icon") }}
+        {% if unread_notifications %}<span class="chip chip--info">{{ unread_notifications }}</span>{% endif %}
+      </a>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch between light and dark appearance">
+        <svg class="theme-toggle__sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg>
+        <svg class="theme-toggle__moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg>
+      </button>
+      <span class="chip chip--gold" title="Signed in as {{ role_label }}">
+        {{ icon("user", "chip__icon") }}<span class="chip__name">{{ user.display_name or user.email }}</span>
+      </span>
+      <form method="post" action="/sign-out">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn--quiet btn--sm" type="submit">
+          {{ icon("log-out", "btn__icon") }} Sign out
+        </button>
+      </form>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="shell">
+  <nav class="sidebar" aria-label="Workspace">
+    {% set ns = namespace(group="") %}
+    {% for item in nav %}
+      {% if item.group != ns.group %}
+        {% if ns.group %}</div>{% endif %}
+        <div class="sidebar__group">
+        <p class="sidebar__label">{{ item.group }}</p>
+        {% set ns.group = item.group %}
+      {% endif %}
+      <a class="sidebar__link" href="{{ item.href }}" {% if active_path == item.href %}aria-current="page"{% endif %}>
+        {{ icon(item.icon, "sidebar__icon") }}{{ item.label }}
+      </a>
+    {% endfor %}
+    {% if nav %}</div>{% endif %}
+  </nav>
+
+  <div class="main">
+    {% block breadcrumb %}{% endblock %}
+    {% block head %}{% endblock %}
+    {% block page %}{% endblock %}
+  </div>
+</div>
+
+<nav class="mobile-bar" aria-label="Workspace">
+  {% for item in nav[:5] %}
+    <a href="{{ item.href }}" {% if active_path == item.href %}aria-current="page"{% endif %}>
+      {{ icon(item.icon) }}<span>{{ item.label.split(' ')[0] }}</span>
+    </a>
+  {% endfor %}
+</nav>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block scripts %}{% endblock %}

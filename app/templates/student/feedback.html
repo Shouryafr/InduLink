@@ -1,0 +1,43 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import chip, empty %}
+{% block title %}Feedback — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Outcomes</p>
+  <h1 class="page-head__title">Feedback you can read</h1>
+  <p class="page-head__sub">
+    Structured feedback shared with you. Confidential notes stay with their author and
+    administrators, and are never copied here.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if rows %}
+<div class="stack" style="max-width:none">
+  {% for row in rows %}
+  <section class="card" style="margin-top:0">
+    <div class="split" style="align-items:flex-start">
+      <div style="max-width:60ch">
+        <div class="cluster" style="margin-bottom:6px">
+          {% if row.project %}{{ chip(row.project.title, "", "briefcase") }}{% endif %}
+          {% if row.confidential %}{{ chip("Confidential", "warn", "lock") }}{% else %}{{ chip("Shared", "info", "users") }}{% endif %}
+          <span class="small muted">{{ row.created_at|dtfmt }}</span>
+        </div>
+        <p style="margin:0 0 6px">{{ row.comments }}</p>
+        {% if row.structured_ratings %}
+        <ul class="small muted" style="margin:0;padding-left:18px">
+          {% for key, value in row.structured_ratings.items() %}<li>{{ key|replace('_',' ')|title }}: {{ value }} / 5</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      <p class="small muted" style="margin:0">From {{ row.author.display_name if row.author else 'a reviewer' }}</p>
+    </div>
+  </section>
+  {% endfor %}
+</div>
+{% else %}
+  {{ empty("No feedback to read", "Reviews recorded about your work appear here when they are not confidential.", "", "", "message-square") }}
+{% endif %}
+{% endblock %}

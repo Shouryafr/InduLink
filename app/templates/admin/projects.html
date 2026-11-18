@@ -1,0 +1,81 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty, state_chip, visibility_chip %}
+{% block title %}Projects and approvals — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Approvals</p>
+  <h1 class="page-head__title">Projects and requirement approvals</h1>
+  <p class="page-head__sub">
+    Approving a challenge freezes its current requirement version. Reopening or cancelling needs a
+    recorded reason, and every transition is audited.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if saved == 'state' %}{{ banner("State updated", "The transition was recorded with the actor and time.", "ok") }}{% endif %}
+
+{% if projects %}
+<div class="table-wrap">
+  <table class="data">
+    <caption class="visually-hidden">All projects</caption>
+    <thead>
+      <tr>
+        <th scope="col">Challenge</th>
+        <th scope="col">Owner</th>
+        <th scope="col">State</th>
+        <th scope="col">Visibility</th>
+        <th scope="col" class="num">Deadline</th>
+        <th scope="col">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for project in projects %}
+      <tr>
+        <td>
+          <strong>{{ project.title }}</strong>
+          <span class="small muted" style="display:block">{{ project.domain or 'No domain' }}</span>
+        </td>
+        <td class="small">{{ project.owner.display_name or project.owner.email }}</td>
+        <td>{{ state_chip(project.state) }}</td>
+        <td>{{ visibility_chip(project.visibility) }}</td>
+        <td class="num small">{{ project.deadline|datefmt }}</td>
+        <td>
+          {% if project.state == 'pending_approval' %}
+          <div class="cluster cluster-sm">
+            <form method="post" action="/admin/projects/{{ project.id }}/transition"
+                  data-confirm="Approve this challenge? The current requirement version is frozen for matching.">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="target" value="approved">
+              <input type="hidden" name="reason" value="Approved by administrator">
+              <button class="btn btn--primary btn--sm" type="submit">Approve</button>
+            </form>
+            <form method="post" action="/admin/projects/{{ project.id }}/transition"
+                  data-confirm="Return this challenge to draft? The owner can then edit the requirements.">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="target" value="draft">
+              <input type="hidden" name="reason" value="Returned for changes">
+              <button class="btn btn--quiet btn--sm" type="submit">Return</button>
+            </form>
+          </div>
+          {% elif project.state == 'approved' %}
+          <form method="post" action="/admin/projects/{{ project.id }}/transition">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="target" value="open">
+            <input type="hidden" name="reason" value="Opened for matching">
+            <button class="btn btn--secondary btn--sm" type="submit">Open for matching</button>
+          </form>
+          {% else %}
+            <span class="small muted">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  {{ empty("No projects yet", "A challenge appears here as soon as an industry partner saves one.", "", "", "briefcase") }}
+{% endif %}
+{% endblock %}

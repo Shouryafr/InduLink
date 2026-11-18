@@ -1,0 +1,168 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty, field_errors, level_select %}
+{% block title %}My evidence — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Evidence</p>
+  <h1 class="page-head__title">My evidence</h1>
+  <p class="page-head__sub">
+    A reviewer sets the assessed level against a written rubric. Until then, your declared level
+    stays provisional — and provisional never satisfies a mandatory requirement on its own.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if saved == 'submitted' %}{{ banner("Evidence submitted", "A mentor or administrator will review it. You will see the assessed level and the reviewer's note here.", "ok") }}{% endif %}
+{% if request.query_params.get('error') %}{{ banner("Could not save", "The submission was incomplete. Check the form and try again.", "risk") }}{% endif %}
+{% if error %}{{ banner("That evidence could not be submitted", error, "risk") }}{% endif %}
+
+<div class="grid grid--split">
+
+  <section class="card" aria-labelledby="list-heading">
+    <div class="card__head">
+      <div>
+        <h2 class="card__title" id="list-heading">Submitted items</h2>
+        <p class="card__sub">Age is shown as neutral information. Old evidence is never silently downgraded.</p>
+      </div>
+    </div>
+
+    {% if items %}
+      <ul class="stack" style="list-style:none;padding:0;margin:0;max-width:none">
+        {% for item in items %}
+        <li style="border-top:1px solid var(--line);padding-top:16px">
+          <div class="split" style="align-items:flex-start">
+            <div>
+              <p style="margin:0 0 2px;font-weight:600">{{ item.skill_name }}</p>
+              <p class="small muted" style="margin:0">
+                {{ item.category_label }} · {{ item.evidence_date|datefmt }}
+                {% if item.demonstrated_level %} · claimed level {{ item.demonstrated_level }}{% endif %}
+              </p>
+            </div>
+            <div class="cluster cluster-sm">
+              {% if item.status == 'verified' or item.status == 'reviewed' %}
+                {{ status_chip(item.status_label, 'ok') }}
+              {% elif item.status == 'rejected' %}
+                {{ status_chip(item.status_label, 'risk') }}
+              {% elif item.status == 'under_review' %}
+                {{ status_chip(item.status_label, 'info') }}
+              {% else %}
+                {{ status_chip(item.status_label, 'warn') }}
+              {% endif %}
+              <span class="chip{% if item.age_tone == 'warn' %} chip--warn{% elif item.age_tone == 'info' %} chip--info{% endif %}">
+                {{ icon("clock", "chip__icon") }}{{ item.age_label }}
+              </span>
+            </div>
+          </div>
+
+          <p class="small" style="margin:8px 0 0">
+            <span class="muted">Source:</span> {{ item.source }}
+          </p>
+
+          {% if item.expired %}
+            <p class="small" style="margin:4px 0 0;color:var(--risk)">
+              Certification expired {{ item.expiry_date|datefmt }}. Practical evidence beside it is judged on its own.
+            </p>
+          {% endif %}
+
+          {% if item.can_see_notes and item.review_notes %}
+          <div class="panel" style="margin-top:12px">
+            <p class="small" style="margin:0"><strong>Reviewer note</strong></p>
+            <p class="small muted" style="margin:4px 0 0">{{ item.review_notes }}</p>
+          </div>
+          {% endif %}
+
+          {% if item.needs_revalidation %}
+            <p class="small muted" style="margin:8px 0 0">
+              This item is over a year old. Consider refreshing it — nothing has been invalidated.
+            </p>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      {{ empty("No evidence yet", "Add the first item on the right. Reviewed evidence is what turns a declared level into a confirmed one.", "", "", "file-text") }}
+    {% endif %}
+  </section>
+
+  <section class="card" aria-labelledby="submit-heading">
+    <h2 class="card__title" id="submit-heading">Submit evidence</h2>
+    <p class="card__sub">A source and a date are required; a reviewer needs something to check.</p>
+
+    {% if not declared %}
+      <div class="banner banner--info" style="margin-top:16px">
+        <svg class="banner__icon" aria-hidden="true"><use href="#i-info"></use></svg>
+        <div><p class="banner__text">
+          Add a skill with a declared level first, so this evidence has something to attach to.
+        </p></div>
+      </div>
+      <a class="btn btn--secondary btn--sm" href="/student/profile">Add a skill</a>
+    {% else %}
+    <form method="post" action="/student/evidence" novalidate style="margin-top:16px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <div class="field">
+        <label class="field__label" for="skill_id">Skill</label>
+        <select class="select" id="skill_id" name="skill_id" required>
+          <option value="">Choose a skill</option>
+          {% for view in declared %}
+          <option value="{{ view.skill_id }}" {% if form.get('skill_id')|string == view.skill_id|string %}selected{% endif %}>
+            {{ view.skill_name }}
+          </option>
+          {% endfor %}
+        </select>
+        {{ field_errors(errors, 'skill_id') }}
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="category">Evidence type</label>
+        <select class="select" id="category" name="category">
+          {% for category in categories %}
+          <option value="{{ category }}" {% if form.get('category') == category %}selected{% endif %}>
+            {{ EVIDENCE_CATEGORY_LABELS[category] }}
+          </option>
+          {% endfor %}
+        </select>
+        <span class="field__help">
+          A certificate supports a learning claim only. It never confirms a practical level.
+        </span>
+        {{ field_errors(errors, 'category') }}
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="source">Source</label>
+        <input class="input" type="text" id="source" name="source" maxlength="300"
+               value="{{ form.get('source', '') }}"
+               placeholder="Repository link, task reference or certificate number">
+        <span class="field__help">Where a reviewer can verify this.</span>
+        {{ field_errors(errors, 'source') }}
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label class="field__label" for="evidence_date">Date</label>
+          <input class="input" type="date" id="evidence_date" name="evidence_date"
+                 value="{{ form.get('evidence_date', '') }}">
+          {{ field_errors(errors, 'evidence_date') }}
+        </div>
+        <div class="field">
+          <label class="field__label" for="f-demonstrated_level">Level demonstrated</label>
+          {{ level_select("demonstrated_level", form.get('demonstrated_level', ''), True, "Not assessed yet") }}
+          {{ field_errors(errors, 'demonstrated_level') }}
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="expiry_date">Expiry (certificates only)</label>
+        <input class="input" type="date" id="expiry_date" name="expiry_date"
+               value="{{ form.get('expiry_date', '') }}">
+        {{ field_errors(errors, 'expiry_date') }}
+      </div>
+
+      <button class="btn btn--primary btn--block" type="submit">Submit for review</button>
+    </form>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

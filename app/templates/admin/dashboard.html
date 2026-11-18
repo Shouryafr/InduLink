@@ -1,0 +1,139 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty, state_chip %}
+{% block title %}Administrator overview — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">University administrator</p>
+  <h1 class="page-head__title">Oversight</h1>
+  <p class="page-head__sub">
+    Approvals, registry health and the integrity of the record. Nothing here is a claim about
+    real-world outcomes: the dataset is synthetic.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+<div class="grid grid--4" style="margin-bottom:24px">
+  <div class="card">
+    <p class="score__label">Students</p>
+    <p class="figure figure--md">{{ students }}</p>
+  </div>
+  <div class="card">
+    <p class="score__label">Mentors</p>
+    <p class="figure figure--md">{{ mentors }}</p>
+    <p class="small muted" style="margin:8px 0 0">{{ confirmed_mentors }} confirmed assignment(s)</p>
+  </div>
+  <div class="card">
+    <p class="score__label">Skills in registry</p>
+    <p class="figure figure--md">{{ skills }}</p>
+    {% if open_proposals %}
+      <p class="small" style="margin:8px 0 0;color:var(--warn)">{{ open_proposals }} proposal(s) waiting</p>
+    {% endif %}
+  </div>
+  <div class="card">
+    <p class="score__label">Awaiting approval</p>
+    <p class="figure figure--md">{{ pending_projects|length }}</p>
+  </div>
+</div>
+
+<div class="grid grid--split">
+  <section class="card" aria-labelledby="approvals-heading">
+    <div class="card__head">
+      <div>
+        <h2 class="card__title" id="approvals-heading">Challenges awaiting approval</h2>
+        <p class="card__sub">Approving freezes the current requirement version for matching.</p>
+      </div>
+      <a class="btn btn--quiet btn--sm" href="/admin/projects">All projects</a>
+    </div>
+
+    {% if pending_projects %}
+      <ul class="stack" style="list-style:none;padding:0;margin:0;max-width:none">
+        {% for project in pending_projects %}
+        <li style="border-top:1px solid var(--line);padding-top:16px">
+          <div class="split" style="align-items:flex-start">
+            <div>
+              <p style="margin:0;font-weight:600">{{ project.title }}</p>
+              <p class="small muted" style="margin:2px 0 0">
+                {{ project.domain or 'No domain' }} · deadline {{ project.deadline|datefmt }} ·
+                {{ project.team_size_min }}–{{ project.team_size_max }} people
+              </p>
+            </div>
+            <form method="post" action="/admin/projects/{{ project.id }}/transition"
+                  data-confirm="Approve this challenge? Its current requirement version is frozen for matching.">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="target" value="approved">
+              <input type="hidden" name="reason" value="Approved by administrator">
+              <button class="btn btn--primary btn--sm" type="submit">Approve</button>
+            </form>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      {{ empty("No approvals waiting", "Submitted challenges appear here for review.", "/admin/projects", "Open projects", "check-circle") }}
+    {% endif %}
+  </section>
+
+  <aside class="stack-lg">
+    <section class="card">
+      <h2 class="card__title">Data integrity</h2>
+      <p class="card__sub">Read live from the database, not asserted in copy.</p>
+      <dl class="small" style="display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:16px 0 0">
+        <dt class="muted">Foreign keys</dt>
+        <dd style="margin:0">{{ status_chip("On" if pragmas.foreign_keys else "Off", "ok" if pragmas.foreign_keys else "risk") }}</dd>
+        <dt class="muted">Journal mode</dt>
+        <dd style="margin:0">{{ pragmas.journal_mode }}</dd>
+        <dt class="muted">Integrity check</dt>
+        <dd style="margin:0">{{ status_chip("OK" if integrity == "ok" else integrity, "ok" if integrity == "ok" else "risk") }}</dd>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2 class="card__title">Accounts by status</h2>
+      <ul class="small" style="margin:16px 0 0;padding-left:18px">
+        {% for status, count in users_by_status.items() %}
+        <li>{{ status|title }}: {{ count }}</li>
+        {% endfor %}
+        {% if not users_by_status %}<li class="muted">No accounts yet.</li>{% endif %}
+      </ul>
+      <p style="margin:16px 0 0"><a class="btn btn--quiet btn--sm" href="/admin/users">Manage users</a></p>
+    </section>
+
+    <section class="card">
+      <h2 class="card__title">Evidence by status</h2>
+      <ul class="small" style="margin:16px 0 0;padding-left:18px">
+        {% for status, count in evidence_by_status.items() %}
+        <li>{{ status|replace('_', ' ')|title }}: {{ count }}</li>
+        {% endfor %}
+        {% if not evidence_by_status %}<li class="muted">No evidence submitted yet.</li>{% endif %}
+      </ul>
+      <p style="margin:16px 0 0"><a class="btn btn--quiet btn--sm" href="/admin/evidence">Evidence oversight</a></p>
+    </section>
+  </aside>
+</div>
+
+<section class="card" style="margin-top:24px" aria-labelledby="states-heading">
+  <h2 class="card__title" id="states-heading">Challenges by state</h2>
+  <p class="card__sub">Only legal transitions are accepted; the state machine refuses anything else.</p>
+  <div class="grid grid--4" style="margin-top:20px">
+    {% for state, count in projects_by_state.items() %}
+    <div class="panel">
+      <p style="margin:0 0 4px">{{ state_chip(state) }}</p>
+      <p class="figure figure--md" style="margin:0">{{ count }}</p>
+    </div>
+    {% endfor %}
+    {% if not projects_by_state %}
+      <p class="small muted">No projects yet.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="card" style="margin-top:24px">
+  <h2 class="card__title">What this overview does not claim</h2>
+  <p class="small muted" style="margin:12px 0 0;max-width:70ch">
+    These are counts of synthetic records. They demonstrate that the workflow behaves as described.
+    They do not measure teaching quality, student ability, or the effectiveness of any intervention.
+  </p>
+</section>
+{% endblock %}

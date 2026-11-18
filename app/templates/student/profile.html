@@ -1,0 +1,226 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty, freshness, field_errors, level_select %}
+{% block title %}My profile and skills — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Profile</p>
+  <h1 class="page-head__title">My profile and skills</h1>
+  <p class="page-head__sub">
+    Declared levels live here. Assessed levels come from evidence and are never overwritten by a
+    declaration.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if saved == 'profile' %}{{ banner("Profile saved", "Your changes are recorded, with the time and actor in the audit log.", "ok") }}{% endif %}
+{% if saved == 'skill' %}{{ banner("Skill updated", "Your declared level is saved. It stays provisional until evidence is reviewed.", "ok") }}{% endif %}
+{% if saved == 'removed' %}{{ banner("Skill removed", "The declared level is gone. Reviewed evidence, if any, is untouched.", "ok") }}{% endif %}
+{% if saved == 'proposed' %}{{ banner("Skill proposed", "An administrator will review your suggestion. It is not in the registry yet.", "info") }}{% endif %}
+{% if error %}{{ banner("Could not save", error, "risk") }}{% endif %}
+
+<form method="post" action="/student/profile" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+  <section class="card" aria-labelledby="about-heading">
+    <h2 class="card__title" id="about-heading">About you</h2>
+    <p class="card__sub">Only what you enter here is shared, and only within the visibility you choose.</p>
+
+    <div class="grid grid--2" style="margin-top:24px">
+      <div class="field">
+        <label class="field__label" for="headline">Headline</label>
+        <input class="input" type="text" id="headline" name="headline" maxlength="160"
+               value="{{ profile.headline }}" aria-describedby="headline-help">
+        <span class="field__help" id="headline-help">One line on what you are working towards.</span>
+        {{ field_errors(errors, 'headline') }}
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="preferred_roles">Preferred roles</label>
+        <input class="input" type="text" id="preferred_roles" name="preferred_roles"
+               value="{{ profile.preferred_roles }}" aria-describedby="roles-help">
+        <span class="field__help" id="roles-help">For example: backend, data analysis, QA.</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="interests">Interests</label>
+      <textarea class="textarea" id="interests" name="interests" rows="3"
+                data-counter="interests-count" maxlength="800">{{ profile.interests }}</textarea>
+      <span class="counter" id="interests-count">0 / 800</span>
+    </div>
+
+    <div class="grid grid--2">
+      <div class="field">
+        <label class="field__label" for="coursework">Coursework</label>
+        <textarea class="textarea" id="coursework" name="coursework" rows="3">{{ profile.coursework }}</textarea>
+      </div>
+      <div class="field">
+        <label class="field__label" for="experience">Experience</label>
+        <textarea class="textarea" id="experience" name="experience" rows="3">{{ profile.experience }}</textarea>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="visibility">Who can see your profile</label>
+      <select class="select" id="visibility" name="visibility" aria-describedby="visibility-help">
+        <option value="private" {% if profile.visibility == 'private' %}selected{% endif %}>Private — only you and administrators</option>
+        <option value="university" {% if profile.visibility == 'university' %}selected{% endif %}>Institution — students, mentors and staff here</option>
+        <option value="public" {% if profile.visibility == 'public' %}selected{% endif %}>Public — any signed-in industry partner</option>
+      </select>
+      <span class="field__help" id="visibility-help">
+        Private is the default. Industry partners only see a public profile.
+      </span>
+      {{ field_errors(errors, 'visibility') }}
+    </div>
+  </section>
+
+  <section class="card" id="availability" style="margin-top:24px" aria-labelledby="availability-heading">
+    <div class="card__head">
+      <div>
+        <h2 class="card__title" id="availability-heading">Availability</h2>
+        <p class="card__sub">A hard constraint: a match cannot confirm what your week cannot hold.</p>
+      </div>
+      {{ freshness(availability) }}
+    </div>
+
+    <div class="grid grid--3">
+      <div class="field">
+        <label class="field__label" for="availability_hours">Hours per week</label>
+        <input class="input" type="number" id="availability_hours" name="availability_hours"
+               min="0" max="80" step="1" inputmode="numeric"
+               value="{{ profile.availability_hours if profile.availability_hours is not none else '' }}">
+        {{ field_errors(errors, 'availability_hours') }}
+      </div>
+      <div class="field">
+        <label class="field__label" for="availability_from">Available from</label>
+        <input class="input" type="date" id="availability_from" name="availability_from"
+               value="{{ profile.availability_from.isoformat() if profile.availability_from else '' }}">
+        {{ field_errors(errors, 'availability_from') }}
+      </div>
+      <div class="field">
+        <label class="field__label" for="availability_to">Available until</label>
+        <input class="input" type="date" id="availability_to" name="availability_to"
+               value="{{ profile.availability_to.isoformat() if profile.availability_to else '' }}">
+        {{ field_errors(errors, 'availability_to') }}
+      </div>
+    </div>
+    <p class="small muted" style="margin:0">
+      Saving a change to this section records today's date as the availability update.
+    </p>
+  </section>
+
+  <div class="cluster" style="margin-top:24px">
+    <button class="btn btn--primary" type="submit">Save profile</button>
+    <a class="btn btn--quiet" href="/student">Cancel</a>
+  </div>
+</form>
+
+<section class="card" style="margin-top:32px" aria-labelledby="skills-heading">
+  <div class="card__head">
+    <div>
+      <h2 class="card__title" id="skills-heading">Skills</h2>
+      <p class="card__sub">Chosen from the canonical registry. Aliases resolve to the same skill.</p>
+    </div>
+  </div>
+
+  {% if views %}
+  <div class="table-wrap" style="margin-bottom:24px">
+    <table class="data">
+      <caption class="visually-hidden">Your declared skills</caption>
+      <thead>
+        <tr>
+          <th scope="col">Skill</th>
+          <th scope="col" class="num">Declared</th>
+          <th scope="col">Evidence status</th>
+          <th scope="col">Level definition</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for view in views %}
+        <tr>
+          <td><strong>{{ view.skill_name }}</strong></td>
+          <td class="num">{{ view.declared_level if view.declared_level is not none else '—' }}</td>
+          <td>
+            <div class="badge-wrap">
+              <button class="badge" type="button" data-badge aria-expanded="false">
+                <svg class="badge__icon" aria-hidden="true"><use href="#i-info"></use></svg>
+                {{ view.assessment.label_text }}
+              </button>
+              <div class="badge-wrap__pop" hidden>
+                <dl>
+                  <dt>Assessed</dt><dd>{{ view.assessment.confirmed_level if view.assessment.confirmed_level is not none else 'No data' }}</dd>
+                  <dt>Provisional</dt><dd>{{ view.assessment.provisional_level if view.assessment.provisional_level is not none else 'No data' }}</dd>
+                  <dt>Evidence</dt><dd>{{ view.evidence_count }} item(s)</dd>
+                  {% if view.latest_evidence_date %}<dt>Latest</dt><dd>{{ view.latest_evidence_date|datefmt }}</dd>{% endif %}
+                </dl>
+              </div>
+            </div>
+          </td>
+          <td class="small muted">{{ view.declared_level|level_word if view.declared_level else '—' }}</td>
+          <td style="text-align:right">
+            {% if view.declared_level is not none %}
+            <form method="post" action="/student/profile/skills/{{ view.skill_id }}/remove">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button class="btn btn--quiet btn--sm" type="submit">Remove</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    {{ empty("No skills yet", "Add one below. A skill with no evidence is shown as no data, not as a failure.", "", "", "book") }}
+  {% endif %}
+
+  <form method="post" action="/student/profile/skills" class="panel">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="grid grid--3" style="align-items:end">
+      <div class="field" style="margin-bottom:0">
+        <label class="field__label" for="skill_id">Skill</label>
+        <select class="select" id="skill_id" name="skill_id">
+          <option value="">Choose a skill</option>
+          {% for skill in registry.items %}
+          <option value="{{ skill.id }}">{{ skill.canonical_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label class="field__label" for="f-declared_level">Declared level</label>
+        {{ level_select("declared_level", "", False) }}
+      </div>
+      <div>
+        <button class="btn btn--primary" type="submit">Add or update skill</button>
+      </div>
+    </div>
+    <p class="field__help" style="margin-top:16px">
+      Level definitions: 1 Awareness · 2 Assisted · 3 Independent · 4 Advanced · 5 Expert.
+      The full definition for each level is shown wherever a level appears.
+    </p>
+  </form>
+
+  <details class="why" style="margin-top:16px">
+    <summary>Cannot find your skill? Propose it to an administrator</summary>
+    <div class="why__body">
+      <form method="post" action="/student/profile/skills/propose">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="grid grid--2">
+          <div class="field">
+            <label class="field__label" for="proposal_name">Skill name</label>
+            <input class="input" type="text" id="proposal_name" name="name" required maxlength="120">
+          </div>
+          <div class="field">
+            <label class="field__label" for="proposal_note">Why it is needed</label>
+            <input class="input" type="text" id="proposal_note" name="note" maxlength="200">
+          </div>
+        </div>
+        <button class="btn btn--secondary btn--sm" type="submit">Send proposal</button>
+      </form>
+    </div>
+  </details>
+</section>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty, level_select %}
+{% block title %}Candidates — {{ project.title }} — InduLink{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="Breadcrumb">
+  <ol class="breadcrumb">
+    <li><a href="/industry">Workspace</a></li>
+    <li><a href="/industry/projects">Challenges</a></li>
+    <li><a href="/industry/projects/{{ project.id }}">{{ project.title }}</a></li>
+    <li aria-current="page">Candidates</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <div class="cluster" style="margin-bottom:8px">
+    {{ chip("Ranked by hard constraints, then weighted evidence", "info", "scale") }}
+    {% if tied_count %}{{ chip("Ties shown honestly", "warn", "scale") }}{% endif %}
+  </div>
+  <h1 class="page-head__title">Candidate ranking</h1>
+  <p class="page-head__sub">
+    {{ project.title }} · {{ results|length }} students in your candidate pool, {{ eligible_count }}
+    eligible. Every row has a Why panel; nothing is a black box.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if project.state != 'open' %}
+  {{ banner("Matching is shown for reference", "This challenge is " ~ project.state|replace('_', ' ') ~ ", so the list is a reading of the current data, not an invitation to confirm.", "warn") }}
+{% endif %}
+{% if not results %}
+  {{ empty("No candidates in your pool", "Students need a public profile and at least one skill before they can be scored.", "", "", "users") }}
+{% else %}
+<div class="stack" style="max-width:none">
+  {% for result in results %}
+  <section class="card" style="margin-top:0">
+    <div class="split" style="align-items:flex-start;gap:20px">
+      <div style="min-width:0">
+        <div class="cluster" style="margin-bottom:6px">
+          <span class="chip">{{ "#" ~ result.rank }}</span>
+          {{ status_chip(result.eligibility_text, result.eligibility_tone) }}
+          {% if result.tied %}{{ chip("Tied score", "warn", "scale") }}{% endif %}
+          {% if result.candidate.visibility != 'public' %}{{ chip("Institution only", "unknown", "lock") }}{% endif %}
+        </div>
+        <h2 class="card__title" style="margin:0">{{ result.display_name }}</h2>
+        <p class="small muted" style="margin:4px 0 0">{{ result.candidate.headline or 'No headline recorded.' }}</p>
+        {% if result.mandatory_failures %}
+        <p class="small" style="margin:10px 0 0;color:var(--risk)">
+          Hard constraint failed: {{ result.mandatory_failures|map(attribute='skill_name')|join(', ') }}.
+          A higher soft score cannot outrank this.
+        </p>
+        {% elif result.mandatory_gaps %}
+        <p class="small" style="margin:10px 0 0;color:var(--warn)">
+          Needs reviewed evidence for {{ result.mandatory_gaps|map(attribute='skill_name')|join(', ') }}.
+        </p>
+        {% endif %}
+      </div>
+      <div style="text-align:right;flex:0 0 auto">
+        <p class="figure figure--md" style="margin:0">{{ result.score }}</p>
+        <p class="small muted" style="margin:0">confirmed {{ result.confirmed_score }} · provisional {{ result.provisional_score }}</p>
+        {% if result.eligibility != 'not_eligible' and project.state in ['open', 'approved', 'active'] %}
+        <p style="margin:12px 0 0">
+          <a class="btn btn--secondary btn--sm" href="/industry/projects/{{ project.id }}/team">Build a team</a>
+        </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <details class="why" style="margin-top:16px">
+      <summary>Why {{ result.display_name.split(' ')[0] }} ranks here</summary>
+      <div class="why__body">
+        <div class="cluster" style="margin-bottom:12px">
+          {% for constraint in result.constraints %}{{ status_chip(constraint.label ~ ": " ~ constraint.outcome_text, constraint.tone) }}{% endfor %}
+        </div>
+        <ul class="small stack-sm" style="margin:0;padding-left:18px">
+          {% for constraint in result.constraints %}<li>{{ constraint.detail }}</li>{% endfor %}
+        </ul>
+
+        <div class="table-wrap" style="margin-top:16px">
+          <table class="data">
+            <caption class="visually-hidden">Requirement outcomes for {{ result.display_name }}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Requirement</th>
+                <th scope="col" class="num">Required</th>
+                <th scope="col" class="num">Level</th>
+                <th scope="col">Check</th>
+                <th scope="col" class="num">Points</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in result.rows %}
+              <tr>
+                <td>{{ row.skill_name }}{% if row.is_mandatory %} <span class="small muted">mandatory</span>{% endif %}</td>
+                <td class="num">{{ row.required_level }}</td>
+                <td class="num">{{ row.level if row.level is not none else '—' }}</td>
+                <td>{{ status_chip(row.outcome_text, row.tone) }}</td>
+                <td class="num">{{ row.points|round(1) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="small muted" style="margin:12px 0 0">
+          {% for reason in result.reasons %}{{ reason }} {% endfor %}
+        </p>
+        {% if result.caveats %}
+          <ul class="small" style="margin:10px 0 0;padding-left:18px">
+            {% for caveat in result.caveats %}<li>{{ caveat }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    </details>
+  </section>
+  {% endfor %}
+</div>
+{% endif %}
+
+<section class="card" style="margin-top:24px">
+  <h2 class="card__title">How to read this list</h2>
+  <div class="grid grid--halves" style="margin-top:12px">
+    <ul class="small stack-sm" style="margin:0;padding-left:18px">
+      <li>Hard constraints are pass/fail and are checked before any score.</li>
+      <li>Confirmed points count only reviewed or verified practical evidence.</li>
+      <li>Provisional points include declared levels and certificates.</li>
+    </ul>
+    <ul class="small stack-sm" style="margin:0;padding-left:18px">
+      <li>Unknown data is shown as no data, never as zero.</li>
+      <li>Equal scores are labelled as ties; order then follows the student's name.</li>
+      <li>{% if snapshot %}Last recorded {{ snapshot.generated_at|dtfmt }}. {% endif %}This is decision support, not a prediction of performance.</li>
+    </ul>
+  </div>
+</section>
+{% endblock %}

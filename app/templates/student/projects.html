@@ -1,0 +1,74 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, empty, state_chip, visibility_chip %}
+{% block title %}Challenges — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Matching</p>
+  <h1 class="page-head__title">Challenges you can see</h1>
+  <p class="page-head__sub">
+    Each row shows whether the hard constraints are met before any score. Unknown evidence is
+    shown as no data, never as zero.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if items %}
+<div class="stack" style="max-width:none">
+  {% for item in items %}
+  <section class="card" style="margin-top:0">
+    <div class="split" style="align-items:flex-start;gap:24px">
+      <div style="min-width:0">
+        <div class="cluster" style="margin-bottom:8px">
+          {{ state_chip(item.project.state) }}
+          {{ visibility_chip(item.project.visibility) }}
+          {{ chip(item.project.domain or "No domain", "", "book") }}
+          {% if item.match and item.match.tied %}{{ chip("Tie on score", "warn", "scale") }}{% endif %}
+        </div>
+        <h2 class="card__title" style="margin:0">
+          <a href="/student/projects/{{ item.project.id }}">{{ item.project.title }}</a>
+        </h2>
+        <p class="small muted" style="margin:6px 0 0">
+          {{ item.project.team_size_min }}–{{ item.project.team_size_max }} people ·
+          {{ item.project.start_date|datefmt }} to {{ item.project.deadline|datefmt }} ·
+          {{ item.project.timezone }}
+        </p>
+        {% if item.match %}
+        <p class="small" style="margin:12px 0 0;max-width:60ch">
+          {% if item.match.eligibility == 'eligible' %}
+            All mandatory requirements are met with confirmed evidence.
+          {% elif item.match.eligibility == 'provisionally_eligible' %}
+            Eligible provisionally: at least one mandatory requirement still needs reviewed evidence.
+          {% else %}
+            Not eligible: a hard constraint is not met. {{ item.match.mandatory_failures|length }} mandatory gap(s).
+          {% endif %}
+        </p>
+        {% endif %}
+      </div>
+      <div style="text-align:right;flex:0 0 auto">
+        {% if item.match %}
+          {{ status_chip(item.match.eligibility_text, item.match.eligibility_tone) }}
+          <p class="figure figure--md" style="margin:8px 0 0">{{ item.match.score }}</p>
+          <p class="small muted" style="margin:0">weighted points / 100</p>
+        {% endif %}
+        <p style="margin:12px 0 0"><a class="btn btn--secondary btn--sm" href="/student/projects/{{ item.project.id }}">Why this score</a></p>
+      </div>
+    </div>
+  </section>
+  {% endfor %}
+</div>
+
+{% if page_meta.pages > 1 %}
+<nav class="table-toolbar" aria-label="Pages">
+  <span class="small muted">{{ page_meta.summary }}</span>
+  <div class="cluster">
+    {% if page_meta.has_previous %}<a class="btn btn--quiet btn--sm" href="?page={{ page_meta.previous_page }}">Previous</a>{% endif %}
+    {% if page_meta.has_next %}<a class="btn btn--quiet btn--sm" href="?page={{ page_meta.next_page }}">Next</a>{% endif %}
+  </div>
+</nav>
+{% endif %}
+{% else %}
+  {{ empty("No challenges visible yet", "Approved and open challenges from your institution appear here. Private drafts stay with their partner.", "/student/profile", "Finish your profile", "briefcase") }}
+{% endif %}
+{% endblock %}

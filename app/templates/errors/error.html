@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "components/macros.html" import icon %}
+{% block title %}{{ code }} — {{ title }}{% endblock %}
+{% block styles %}<link rel="stylesheet" href="/static/css/landing.css?v={{ asset_v }}">{% endblock %}
+
+{% block content %}
+<div class="errorpage">
+  <div>
+    <p class="errorpage__code">{{ code }}</p>
+    <h1>{{ title }}</h1>
+    <p>{{ message }}</p>
+
+    {% if field_errors %}
+    <ul class="small muted" style="text-align:left;max-width:420px;margin:16px auto 0">
+      {% for field, messages in field_errors.items() %}
+        {% for text in messages %}<li>{{ text }}</li>{% endfor %}
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="cluster" style="justify-content:center;margin-top:32px">
+      <a class="btn btn--secondary" href="javascript:history.back()">Go back</a>
+      <a class="btn btn--primary" href="{{ '/student' if user and user.role == 'student' else ('/mentor' if user and user.role == 'mentor' else ('/industry' if user and user.role == 'industry' else ('/admin' if user and user.role == 'admin' else '/'))) }}">
+        {{ icon("arrow-right", "btn__icon") }} Go to your workspace
+      </a>
+    </div>
+
+    <p class="small muted" style="margin-top:32px">
+      Reference: {{ code }} · {{ request.url.path }}
+    </p>
+  </div>
+</div>
+{% endblock %}

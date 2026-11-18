@@ -1,0 +1,82 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, empty, state_chip, visibility_chip %}
+{% block title %}Search{% if query %} — {{ query }}{% endif %} — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Search</p>
+  <h1 class="page-head__title">{% if query %}Results for “{{ query }}”{% else %}Search{% endif %}</h1>
+  <p class="page-head__sub">Only records your account may open are returned.</p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if not query %}
+  {{ empty("Start typing in the search box", "Search across the skill registry, challenges you can see, and people your role may view.", "", "", "search") }}
+{% else %}
+
+  <section class="card" style="margin-bottom:24px">
+    <h2 class="card__title">Challenges</h2>
+    {% if projects %}
+      <ul class="stack" style="list-style:none;padding:0;margin:16px 0 0;max-width:none">
+        {% for project in projects %}
+        <li style="border-top:1px solid var(--line);padding-top:12px" class="split">
+          <div>
+            <p style="margin:0;font-weight:600">{{ project.title }}</p>
+            <p class="small muted" style="margin:2px 0 0">
+              {{ project.domain or 'No domain' }} · deadline {{ project.deadline|datefmt }}
+            </p>
+          </div>
+          <div class="cluster cluster-sm">
+            {{ state_chip(project.state) }}
+            {{ visibility_chip(project.visibility) }}
+            {% if user and (user.role == 'industry' or user.role == 'admin') %}
+              <a class="btn btn--quiet btn--sm" href="/industry/projects/{{ project.id }}">Open</a>
+            {% endif %}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="small muted" style="margin:12px 0 0">No challenges match, or none are visible to your account.</p>
+    {% endif %}
+  </section>
+
+  <div class="grid grid--2">
+    <section class="card">
+      <h2 class="card__title">Skills</h2>
+      {% if skills %}
+        <div class="cluster" style="margin-top:16px">
+          {% for skill in skills %}
+            {{ chip(skill.canonical_name ~ " · " ~ skill.category, "", "book") }}
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="small muted" style="margin:12px 0 0">No registry skills match.</p>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h2 class="card__title">People</h2>
+      {% if people %}
+        <ul class="stack-sm" style="list-style:none;padding:0;margin:16px 0 0;max-width:none">
+          {% for profile in people %}
+          <li class="split">
+            <span>{{ profile.user.display_name if profile.user else 'Student' }}</span>
+            <span class="small muted">{{ profile.headline or '—' }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="small muted" style="margin:12px 0 0">
+          {% if user and user.role in ['admin', 'mentor', 'industry'] %}
+            No visible profiles match.
+          {% else %}
+            People search is available to mentors, industry partners and administrators.
+          {% endif %}
+        </p>
+      {% endif %}
+    </section>
+  </div>
+{% endif %}
+{% endblock %}

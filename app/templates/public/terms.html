@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Terms and confidentiality — InduLink{% endblock %}
+{% block styles %}<link rel="stylesheet" href="/static/css/landing.css?v={{ asset_v }}">{% endblock %}
+
+{% block content %}
+<div class="container container--narrow section">
+  <p class="eyebrow">Terms</p>
+  <h1>Terms, ownership and confidentiality</h1>
+  <p class="lede">
+    What follows is the platform's own baseline. It is deliberately short, and your institution's
+    terms replace it once they are published.
+  </p>
+
+  <div class="citation" style="margin:24px 0">
+    <div class="banner banner--warn" role="alert">
+      <svg class="banner__icon" aria-hidden="true"><use href="#i-alert-triangle"></use></svg>
+      <div>
+        <p class="banner__title">Terms to be confirmed by your institution</p>
+        <p class="banner__text">
+          No legal terms have been published for this deployment. Text on this page is a placeholder
+          describing how the prototype behaves, not a contract. An administrator must publish the
+          institution's terms, with a version and date, before this platform is used with real
+          projects.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Ownership of deliverables</h2>
+  <p>
+    Ownership, reuse and disclosure terms for project deliverables are set by the agreement between
+    the student, the institution and the industry partner. InduLink records the confidentiality
+    settings and who was permitted to see what; it does not itself assign ownership.
+  </p>
+
+  <h2>Confidentiality in practice</h2>
+  <ul>
+    <li>Each project has a visibility setting: public, institution only, or private.</li>
+    <li>Each file has an access level: team, mentor, company or administrator.</li>
+    <li>A student must accept the project's confidentiality acknowledgement, with its version and timestamp stored, before confidential material opens.</li>
+    <li>Every confidential file access is written to the audit log.</li>
+  </ul>
+
+  <h2>What you agree to when you create an account</h2>
+  <ul>
+    <li>You will not enter personal data about real people in this prototype.</li>
+    <li>You will not upload code with the expectation that it runs. Uploads are stored, never executed.</li>
+    <li>You understand that recommendations are proposals. They are not offers, guarantees or assessments of a person's worth.</li>
+    <li>You understand that a synthetic dataset is in use, and that it cannot support claims about real outcomes.</li>
+  </ul>
+
+  <h2>No guarantee</h2>
+  <p>
+    InduLink is a decision-support tool. It does not guarantee a placement, a result, a grade or
+    employability. Compatibility scores are not probabilities of selection or success.
+  </p>
+
+  <h2>Changes</h2>
+  <p>
+    Terms are versioned. When they change, the published version and date are shown here, and
+    material changes are recorded in the audit log.
+  </p>
+</div>
+{% endblock %}

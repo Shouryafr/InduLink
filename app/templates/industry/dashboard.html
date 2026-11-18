@@ -1,0 +1,109 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty, state_chip, visibility_chip %}
+{% block title %}Industry overview — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Industry workspace</p>
+  <h1 class="page-head__title">{{ user.display_name or 'Your challenges' }}</h1>
+  <p class="page-head__sub">
+    A challenge moves through draft, approval, open, active and completed. Only legal transitions
+    are accepted, and every change is versioned.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+<div class="grid grid--4" style="margin-bottom:32px">
+  <div class="card">
+    <p class="score__label">Challenges</p>
+    <p class="figure figure--md">{{ total }}</p>
+    <p class="small muted" style="margin:8px 0 0">Created by your organisation.</p>
+  </div>
+  <div class="card">
+    <p class="score__label">Awaiting approval</p>
+    <p class="figure figure--md">{{ by_state.get('pending_approval', 0) }}</p>
+    <p class="small muted" style="margin:8px 0 0">An administrator approves requirements.</p>
+  </div>
+  <div class="card">
+    <p class="score__label">Open for matching</p>
+    <p class="figure figure--md">{{ by_state.get('open', 0) }}</p>
+    <p class="small muted" style="margin:8px 0 0">Ready for candidate recommendations.</p>
+  </div>
+  <div class="card">
+    <p class="score__label">Active</p>
+    <p class="figure figure--md">{{ by_state.get('active', 0) }}</p>
+    <p class="small muted" style="margin:8px 0 0">Teams delivering against the plan.</p>
+  </div>
+</div>
+
+<section class="card" aria-labelledby="recent-heading">
+  <div class="card__head">
+    <div>
+      <h2 class="card__title" id="recent-heading">Recent challenges</h2>
+      <p class="card__sub">Requirements are immutable once approved; editing creates a new version.</p>
+    </div>
+    <a class="btn btn--primary btn--sm" href="/industry/projects/new">{{ icon("plus", "btn__icon") }} New challenge</a>
+  </div>
+
+  {% if projects %}
+  <div class="table-wrap">
+    <table class="data">
+      <caption class="visually-hidden">Your recent challenges</caption>
+      <thead>
+        <tr>
+          <th scope="col">Challenge</th>
+          <th scope="col">State</th>
+          <th scope="col">Visibility</th>
+          <th scope="col">Deadline</th>
+          <th scope="col" class="num">Team size</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for project in projects %}
+        <tr>
+          <td>
+            <a href="/industry/projects/{{ project.id }}"><strong>{{ project.title }}</strong></a>
+            <span class="small muted" style="display:block">{{ project.domain or 'No domain set' }}</span>
+          </td>
+          <td>{{ state_chip(project.state) }}</td>
+          <td>{{ visibility_chip(project.visibility) }}</td>
+          <td class="num">{{ project.deadline|datefmt }}</td>
+          <td class="num">{{ project.team_size_min }}–{{ project.team_size_max }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p style="margin:16px 0 0"><a class="btn btn--quiet btn--sm" href="/industry/projects">All challenges</a></p>
+  {% else %}
+    {{ empty("No challenges yet", "Structure your first brief into skills, levels and weights. It stays a draft until you submit it for approval.", "/industry/projects/new", "Create a challenge", "briefcase") }}
+  {% endif %}
+</section>
+
+<section class="card" style="margin-top:24px">
+  <h2 class="card__title">What happens after you submit</h2>
+  <ol class="timeline" style="margin-top:20px">
+    <li data-state="current" data-first="true">
+      <span class="timeline__label">Draft</span>
+      <span class="timeline__date">Editable without a version bump</span>
+    </li>
+    <li>
+      <span class="timeline__label">Awaiting approval</span>
+      <span class="timeline__date">An administrator reviews the requirements</span>
+    </li>
+    <li>
+      <span class="timeline__label">Approved</span>
+      <span class="timeline__date">Requirements are frozen as a version</span>
+    </li>
+    <li>
+      <span class="timeline__label">Open</span>
+      <span class="timeline__date">Candidates can be recommended</span>
+    </li>
+    <li>
+      <span class="timeline__label">Active</span>
+      <span class="timeline__date">A team is confirmed and delivering</span>
+    </li>
+  </ol>
+</section>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import chip, status_chip, empty %}
+{% block title %}Passports — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Assurance</p>
+  <h1 class="page-head__title">Skill passports</h1>
+  <p class="page-head__sub">
+    Every project-scoped passport entry in the demo, with its publication state. A published entry
+    is readable by signed-in users; a draft is visible to its owner, reviewers and administrators.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+<p class="small muted">{{ rows|length }} entries · {{ published }} published.</p>
+
+{% if rows %}
+<div class="table-wrap">
+  <table class="data">
+    <caption class="visually-hidden">Passport entries, newest first</caption>
+    <thead>
+      <tr>
+        <th scope="col">Student</th>
+        <th scope="col">Project</th>
+        <th scope="col">Role</th>
+        <th scope="col">Technologies</th>
+        <th scope="col">State</th>
+        <th scope="col">Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.student.user.display_name if row.student and row.student.user else 'Student ' ~ row.student_id }}</td>
+        <td class="small">{{ row.project.title if row.project else 'Project ' ~ row.project_id }}</td>
+        <td class="small muted">{{ row.role or '—' }}</td>
+        <td class="small muted">{{ row.technologies|join(', ') if row.technologies else '—' }}</td>
+        <td>
+          {% if row.publication_state == 'approved' %}
+            {{ status_chip("Published", "ok") }}
+          {% elif row.publication_state == 'unpublished' %}
+            {{ status_chip("Private draft", "unknown") }}
+          {% else %}
+            {{ status_chip(row.publication_state|title, "warn") }}
+          {% endif %}
+        </td>
+        <td class="small muted">{{ row.created_at|dtfmt }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  {{ empty("No passports yet", "Entries appear once a student records one from a confirmed team place.", "", "", "award") }}
+{% endif %}
+{% endblock %}

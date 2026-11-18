@@ -1,0 +1,157 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty %}
+{% block title %}What-If — {{ project.title }} — InduLink{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="Breadcrumb">
+  <ol class="breadcrumb">
+    <li><a href="/industry">Workspace</a></li>
+    <li><a href="/industry/projects/{{ project.id }}">{{ project.title }}</a></li>
+    <li aria-current="page">What-If</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <div class="cluster" style="margin-bottom:8px">{{ chip("Read-only simulation", "info", "eye-off") }}</div>
+  <h1 class="page-head__title">What-If</h1>
+  <p class="page-head__sub">
+    Change the inputs in memory and compare rankings. Nothing is saved except the scenario record,
+    and the checksum before and after proves the data did not move.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if error %}{{ banner("That simulation was not applied", error, "risk") }}{% endif %}
+
+<div class="grid grid--split">
+  <div>
+    <section class="card">
+      <h2 class="card__title">Run a simulation</h2>
+      <form method="post" action="/industry/projects/{{ project.id }}/what-if" style="margin-top:16px">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="field">
+          <label class="field__label" for="skill_id">Requirement to change</label>
+          <select class="select" id="skill_id" name="skill_id">
+            <option value="">No requirement change</option>
+            {% for requirement in requirements %}
+            <option value="{{ requirement.skill_id }}">{{ requirement.skill_name }} (level {{ requirement.required_level }}, {{ (requirement.weight * 100)|round|int }}%)</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="grid grid--halves">
+          <div class="field">
+            <label class="field__label" for="new_level">Simulated required level</label>
+            <select class="select" id="new_level" name="new_level">
+              <option value="">Keep current</option>
+              {% for level in [1,2,3,4,5] %}<option value="{{ level }}">{{ level }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label class="field__label" for="mandatory">Mandatory?</label>
+            <select class="select" id="mandatory" name="mandatory">
+              <option value="keep">Keep current</option>
+              <option value="yes">Make mandatory</option>
+              <option value="no">Make weighted only</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="team_size_max">Simulated maximum team size</label>
+          <input class="input" type="number" id="team_size_max" name="team_size_max" min="1" max="12" placeholder="Keep current ({{ project.team_size_max }})">
+        </div>
+        <div class="field">
+          <label class="field__label" for="label">Scenario label</label>
+          <input class="input" type="text" id="label" name="label" maxlength="200" placeholder="Raise SQL to level 4">
+        </div>
+        <button class="btn btn--primary btn--sm" type="submit">Run simulation</button>
+      </form>
+    </section>
+
+    {% if outcome %}
+    <section class="card" style="margin-top:24px" aria-labelledby="result-heading">
+      <div class="card__head">
+        <div>
+          <h2 class="card__title" id="result-heading">Simulation result</h2>
+          <p class="card__sub">{{ scenario.label if scenario else 'Scenario' }} · {{ scenario.created_at|dtfmt if scenario }}</p>
+        </div>
+        {% if outcome.unchanged %}
+          {{ status_chip("Data unchanged", "ok") }}
+        {% else %}
+          {{ status_chip("Checksum mismatch", "risk") }}
+        {% endif %}
+      </div>
+
+      <ul class="small stack-sm" style="margin:0 0 16px;padding-left:18px">
+        {% for change in outcome.changes %}<li>{{ change }}</li>{% endfor %}
+      </ul>
+
+      <div class="grid grid--halves">
+        <div>
+          <p class="score__label">Current</p>
+          <ol class="small" style="margin:6px 0 0;padding-left:18px">
+            {% for row in outcome.before %}<li>{{ row.name }} — {{ row.score }} ({{ row.eligibility|replace('_',' ') }})</li>{% endfor %}
+          </ol>
+        </div>
+        <div>
+          <p class="score__label">Simulated</p>
+          <ol class="small" style="margin:6px 0 0;padding-left:18px">
+            {% for row in outcome.after %}<li>{{ row.name }} — {{ row.score }} ({{ row.eligibility|replace('_',' ') }})</li>{% endfor %}
+          </ol>
+        </div>
+      </div>
+
+      {% if outcome.entrants or outcome.leavers or outcome.moved %}
+      <div class="panel" style="margin-top:16px">
+        <p class="small" style="margin:0"><strong>What moved</strong></p>
+        <ul class="small muted" style="margin:6px 0 0;padding-left:18px">
+          {% for name in outcome.entrants %}<li>Entered the top {{ outcome.after|length }}: {{ name }}</li>{% endfor %}
+          {% for name in outcome.leavers %}<li>Left the top {{ outcome.before|length }}: {{ name }}</li>{% endfor %}
+          {% for line in outcome.moved %}<li>{{ line }}</li>{% endfor %}
+        </ul>
+      </div>
+      {% else %}
+        <p class="small muted" style="margin-top:16px">The top candidates did not change.</p>
+      {% endif %}
+
+      <p class="small muted" style="margin-top:16px">
+        Checksum before <code class="small">{{ outcome.checksum_before[:20] }}…</code>,
+        after <code class="small">{{ outcome.checksum_after[:20] }}…</code>.
+        {% if outcome.unchanged %}The two match, so no project, skill or evidence row changed.{% endif %}
+      </p>
+    </section>
+    {% endif %}
+  </div>
+
+  <aside class="stack-lg">
+    <section class="card">
+      <h2 class="card__title">How the read-only check works</h2>
+      <ol class="small stack-sm" style="margin:12px 0 0;padding-left:18px">
+        <li>Candidates and requirements are read into memory.</li>
+        <li>The edited requirement set is applied to that copy only.</li>
+        <li>Both rankings are recomputed with the same scoring rules.</li>
+        <li>A digest of every domain row is compared before and after.</li>
+        <li>A difference refuses the result rather than hiding it.</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2 class="card__title">Recent scenarios</h2>
+      {% if history %}
+      <ul class="stack-sm" style="list-style:none;padding:0;margin:12px 0 0;max-width:none">
+        {% for item in history %}
+        <li style="border-top:1px solid var(--line);padding-top:8px">
+          <a href="/industry/projects/{{ project.id }}/what-if?scenario={{ item.id }}">{{ item.label or 'Scenario ' ~ item.id }}</a>
+          <span class="small muted" style="display:block">{{ item.created_at|dtfmt }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+        <p class="small muted" style="margin-top:12px">No scenarios recorded yet.</p>
+      {% endif %}
+    </section>
+  </aside>
+</div>
+{% endblock %}

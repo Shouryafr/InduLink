@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% from "components/macros.html" import icon, status_chip %}
+{% block title %}How InduLink works{% endblock %}
+{% block styles %}<link rel="stylesheet" href="/static/css/landing.css?v={{ asset_v }}">{% endblock %}
+
+{% block content %}
+<div class="container container--narrow section">
+  <p class="eyebrow">How it works</p>
+  <h1>Rules you can read, on data you can check</h1>
+  <p class="lede">
+    InduLink is decision support. It structures a challenge, checks hard constraints, scores the
+    rest transparently, and hands the decision to a person with the reasoning attached.
+  </p>
+
+  <hr class="gold-rule">
+
+  <h2>The chain</h2>
+  <ol class="stack" style="max-width:var(--measure)">
+    <li>
+      <strong>A challenge is submitted.</strong> An industry partner writes a brief with skills,
+      required levels, weights, team size, dates and visibility.
+    </li>
+    <li>
+      <strong>Requirements are structured and approved.</strong> Weights are normalised to 100% and
+      shown as percentages. Editing an approved challenge creates a new requirement version; the
+      old one stays readable.
+    </li>
+    <li>
+      <strong>Evidence is evaluated.</strong> A student's declared level and their assessed level are
+      separate fields. Only reviewed or verified evidence confirms a level.
+    </li>
+    <li>
+      <strong>Candidates and teams are recommended.</strong> Hard checks produce Eligible,
+      Provisionally eligible or Not eligible. Teams are then scored as a whole for coverage and
+      balance, not by adding up individual ranks.
+    </li>
+    <li>
+      <strong>A mentor is recommended.</strong> Expertise, domain, experience and remaining capacity
+      are filtered and ranked, and capacity is re-read inside the confirming transaction.
+    </li>
+    <li>
+      <strong>Execution is tracked, and outcomes recorded.</strong> Deliverables are reviewed against
+      a rubric, and only then does a competency reach a student's passport — with its scope stated.
+    </li>
+  </ol>
+
+  <h2>The evidence policy, in full</h2>
+  <p>
+    One policy, applied everywhere. It is the reason a match shows two numbers instead of one.
+  </p>
+  <div class="table-wrap">
+    <table class="data">
+      <caption>What counts toward a confirmed score, a provisional score and a mandatory check.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Student has for a skill</th>
+          <th scope="col">Effective level</th>
+          <th scope="col">Label</th>
+          <th scope="col">Counts toward</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Reviewed or verified evidence</td>
+          <td>Assessed level from that evidence</td>
+          <td>{{ status_chip("Reviewed / Verified", "ok") }}</td>
+          <td>Confirmed score and mandatory checks</td>
+        </tr>
+        <tr>
+          <td>Only a declared level, or a certificate, or unreviewed evidence</td>
+          <td>Declared level</td>
+          <td>{{ status_chip("Provisional", "warn") }}</td>
+          <td>Provisional score only; mandatory checks return “provisional — evidence needed”</td>
+        </tr>
+        <tr>
+          <td>Nothing</td>
+          <td>No value</td>
+          <td>{{ status_chip("Unknown", "unknown") }}</td>
+          <td>Neither score. Shown as “no data”, never as zero</td>
+        </tr>
+        <tr>
+          <td>Rejected evidence only</td>
+          <td>No value (a declaration stays provisional)</td>
+          <td>{{ status_chip("Rejected", "risk") }}</td>
+          <td>Nothing</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>How a match is scored</h2>
+  <p>
+    Within each eligibility group, the match is the weighted sum of each skill's contribution,
+    where a skill contributes the lower of the student's effective level and the required level:
+  </p>
+  <pre style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;overflow-x:auto"><code>match = 100 × Σ ( wᵢ × min( Lᵢ / Rᵢ , 1 ) )      with  Σ wᵢ = 1</code></pre>
+  <p class="small muted">
+    Lᵢ is the student's effective level for skill i under the evidence policy, Rᵢ the required
+    level, and wᵢ the normalised weight. A skill with no data contributes nothing and is listed as
+    no data rather than scored as a failure.
+  </p>
+
+  <h2>What InduLink does not do</h2>
+  <ul style="max-width:var(--measure)">
+    <li>It does not predict a student's success, ability or employability.</li>
+    <li>It does not use machine learning, and makes no machine-learning claims.</li>
+    <li>It does not infer character, reliability or conflict from personal traits.</li>
+    <li>It does not replace a confirmed assignment without a person confirming the change.</li>
+    <li>It does not publish anything on a passport that a student has not chosen to share.</li>
+  </ul>
+
+  <div class="notice" style="margin-top:var(--s-8)">
+    <svg class="notice__icon" aria-hidden="true" focusable="false"><use href="#i-lock"></use></svg>
+    <div>
+      <h3>Privacy in one paragraph</h3>
+      <p>
+        Profiles are private by default. A student chooses what industry partners and mentors can
+        see. Evidence review notes are visible only to the student, the reviewer and administrators.
+        Access to confidential project material requires an acknowledgement, and every confidential
+        access is audited.
+      </p>
+    </div>
+  </div>
+
+  <div class="cluster" style="margin-top:var(--s-8)">
+    <a class="btn btn--primary" href="/register">Create an account</a>
+    <a class="btn btn--secondary" href="/sign-in">Sign in</a>
+  </div>
+</div>
+{% endblock %}

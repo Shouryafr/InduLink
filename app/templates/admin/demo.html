@@ -1,0 +1,89 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner %}
+{% block title %}Demo controls — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Demo</p>
+  <h1 class="page-head__title">Demo controls</h1>
+  <p class="page-head__sub">
+    This environment is demo mode. Every person, project and evidence item is synthetic and
+    labelled as such. Reset rebuilds the seeded dataset from scratch.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if reset_done %}
+  {{ banner("Demo reset complete", "The seeded dataset is restored, and the reset itself is recorded in the audit log.", "ok") }}
+{% endif %}
+
+<div class="grid grid--split">
+  <section class="card">
+    <div class="card__head">
+      <div>
+        <h2 class="card__title">Restore the seeded dataset</h2>
+        <p class="card__sub">Admin only. Demo mode only. Never available in production.</p>
+      </div>
+      {% if available %}{{ status_chip("Available here", "ok") }}{% else %}{{ status_chip("Not available", "risk") }}{% endif %}
+    </div>
+
+    <p class="small" style="margin-top:16px">
+      Reset builds a fresh database beside the current one, migrates it, loads the deterministic
+      seed and switches the application onto it. The old file is removed. The append-only history
+      in the old database is replaced as a whole rather than deleted row by row, so the
+      append-only rules are enforced by the database itself.
+    </p>
+
+    {% if available %}
+    <form method="post" action="/admin/demo/reset" style="margin-top:16px"
+          data-confirm="Rebuild the demo dataset? Current demo changes will be lost.">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn--primary btn--sm" type="submit">Reset demo data</button>
+    </form>
+    {% else %}
+      <p class="small muted" style="margin-top:16px">
+        This control needs DEMO_MODE=true and a SQLite demo database. PostgreSQL demo reset is not
+        implemented, so the control refuses rather than pretending.
+      </p>
+    {% endif %}
+
+    <div class="grid grid--4" style="margin-top:24px">
+      <div>
+        <p class="score__label">Students</p>
+        <p class="figure figure--md">{{ counts.students }}</p>
+      </div>
+      <div>
+        <p class="score__label">Projects</p>
+        <p class="figure figure--md">{{ counts.projects }}</p>
+      </div>
+      <div>
+        <p class="score__label">Evidence</p>
+        <p class="figure figure--md">{{ counts.evidence }}</p>
+      </div>
+      <div>
+        <p class="score__label">Passports</p>
+        <p class="figure figure--md">{{ counts.passports }}</p>
+      </div>
+    </div>
+  </section>
+
+  <aside class="stack-lg">
+    <section class="card">
+      <h2 class="card__title">Recent resets</h2>
+      {% if resets %}
+      <ul class="stack-sm" style="list-style:none;padding:0;margin:12px 0 0;max-width:none">
+        {% for event in resets %}
+        <li style="border-top:1px solid var(--line);padding-top:8px">
+          <p class="small" style="margin:0">{{ event.reason }}</p>
+          <p class="small muted" style="margin:2px 0 0">{{ event.at|dtfmt }} · user {{ event.actor_id }}</p>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+        <p class="small muted" style="margin-top:12px">No reset recorded yet.</p>
+      {% endif %}
+    </section>
+  </aside>
+</div>
+{% endblock %}

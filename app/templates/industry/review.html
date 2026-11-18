@@ -1,0 +1,164 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty %}
+{% block title %}Review — {{ project.title }} — InduLink{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="Breadcrumb">
+  <ol class="breadcrumb">
+    <li><a href="/industry">Workspace</a></li>
+    <li><a href="/industry/projects/{{ project.id }}">{{ project.title }}</a></li>
+    <li aria-current="page">Review</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Outcomes</p>
+  <h1 class="page-head__title">Evaluation and feedback</h1>
+  <p class="page-head__sub">
+    Structured evaluation of the project, plus feedback about individual students. Confidential
+    notes are visible to their author and administrators, never to the student.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if saved == 'evaluation' %}{{ banner("Evaluation recorded", "Its confidentiality setting decides who can read it.", "ok") }}{% endif %}
+{% if saved == 'feedback' %}{{ banner("Feedback recorded", "Confidential feedback stays with you and administrators.", "ok") }}{% endif %}
+{% if error %}{{ banner("That record did not save", error, "risk") }}{% endif %}
+
+<div class="grid grid--split">
+  <div>
+    <section class="card">
+      <h2 class="card__title">Project evaluation</h2>
+      <form method="post" action="/industry/projects/{{ project.id }}/review/evaluation" style="margin-top:16px">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="grid grid--3">
+          <div class="field">
+            <label class="field__label" for="delivery">Delivery</label>
+            <select class="select" id="delivery" name="delivery">
+              {% for level in [1,2,3,4,5] %}<option value="{{ level }}" {% if level == 3 %}selected{% endif %}>{{ level }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label class="field__label" for="quality">Quality</label>
+            <select class="select" id="quality" name="quality">
+              {% for level in [1,2,3,4,5] %}<option value="{{ level }}" {% if level == 3 %}selected{% endif %}>{{ level }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label class="field__label" for="communication">Communication</label>
+            <select class="select" id="communication" name="communication">
+              {% for level in [1,2,3,4,5] %}<option value="{{ level }}" {% if level == 3 %}selected{% endif %}>{{ level }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="outcome">Outcome</label>
+          <select class="select" id="outcome" name="outcome">
+            <option value="met">Met the brief</option>
+            <option value="partially_met">Partially met</option>
+            <option value="not_met">Did not meet</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field__label" for="summary">Summary</label>
+          <textarea class="textarea" id="summary" name="summary" rows="3" required placeholder="What was delivered, and what evidence supports that"></textarea>
+        </div>
+        <div class="field">
+          <label class="field__label" for="eval_confidential">Visibility</label>
+          <select class="select" id="eval_confidential" name="confidential">
+            <option value="yes">Confidential (author and administrators)</option>
+            <option value="no">Shared summary</option>
+          </select>
+        </div>
+        <button class="btn btn--primary btn--sm" type="submit">Record evaluation</button>
+      </form>
+    </section>
+
+    <section class="card" style="margin-top:24px">
+      <h2 class="card__title">Feedback about a student</h2>
+      {% if members %}
+      <form method="post" action="/industry/projects/{{ project.id }}/review/feedback" style="margin-top:16px">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="field">
+          <label class="field__label" for="subject_user_id">Student</label>
+          <select class="select" id="subject_user_id" name="subject_user_id">
+            {% for profile in members %}
+            <option value="{{ profile.user_id }}">{{ profile.user.display_name if profile.user else 'Student ' ~ profile.id }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="grid grid--3">
+          <div class="field">
+            <label class="field__label" for="clarity">Clarity</label>
+            <select class="select" id="clarity" name="clarity">
+              {% for level in [1,2,3,4,5] %}<option value="{{ level }}" {% if level == 4 %}selected{% endif %}>{{ level }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label class="field__label" for="reliability">Reliability</label>
+            <select class="select" id="reliability" name="reliability">
+              {% for level in [1,2,3,4,5] %}<option value="{{ level }}" {% if level == 4 %}selected{% endif %}>{{ level }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label class="field__label" for="collaboration">Collaboration</label>
+            <select class="select" id="collaboration" name="collaboration">
+              {% for level in [1,2,3,4,5] %}<option value="{{ level }}" {% if level == 4 %}selected{% endif %}>{{ level }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="comments">Comment</label>
+          <textarea class="textarea" id="comments" name="comments" rows="3" required placeholder="Specific, checkable feedback"></textarea>
+        </div>
+        <div class="field">
+          <label class="field__label" for="fb_confidential">Visibility</label>
+          <select class="select" id="fb_confidential" name="confidential">
+            <option value="yes">Confidential (author and administrators)</option>
+            <option value="no">Shared with the student</option>
+          </select>
+        </div>
+        <button class="btn btn--primary btn--sm" type="submit">Record feedback</button>
+      </form>
+      {% else %}
+        {{ empty("No confirmed team members", "Feedback about a student needs a confirmed team first.", "", "", "users") }}
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="stack-lg">
+    <section class="card">
+      <h2 class="card__title">Evaluations you can read</h2>
+      {% if evaluations %}
+      <ul class="stack-sm" style="list-style:none;padding:0;margin:16px 0 0;max-width:none">
+        {% for row in evaluations %}
+        <li style="border-top:1px solid var(--line);padding-top:10px">
+          <div class="cluster" style="margin-bottom:4px">
+            {{ chip(row.outcome|replace('_',' ')|title, "ok" if row.outcome == "met" else "warn", "check") }}
+            {% if row.confidential %}{{ chip("Confidential", "unknown", "lock") }}{% endif %}
+          </div>
+          <p class="small" style="margin:0">{{ row.summary }}</p>
+          <p class="small muted" style="margin:4px 0 0">{{ row.created_at|dtfmt }}</p>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+        <p class="small muted" style="margin-top:12px">No evaluations recorded yet.</p>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h2 class="card__title">Confidentiality</h2>
+      <ul class="small stack-sm" style="margin:12px 0 0;padding-left:18px">
+        <li>Confidential records are readable by their author and administrators.</li>
+        <li>The student they concern cannot read a confidential note.</li>
+        <li>Sharing a summary makes it readable by the student.</li>
+        <li>Every list is filtered on the server, not by hiding a link.</li>
+      </ul>
+    </section>
+  </aside>
+</div>
+{% endblock %}

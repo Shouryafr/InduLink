@@ -1,0 +1,258 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, banner, field_errors %}
+{% block title %}New challenge — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">New challenge</p>
+  <h1 class="page-head__title">Structure a challenge</h1>
+  <p class="page-head__sub">
+    Weights are entered as relative importance and normalised to 100% on save, so the percentages
+    you see are the ones used in scoring.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if error %}{{ banner("This challenge cannot be saved yet", error, "risk") }}{% endif %}
+
+<ol class="stepper" aria-label="Challenge setup">
+  <li data-state="done">Challenge details</li>
+  <li aria-current="step">Requirements</li>
+  <li>Review and submit</li>
+</ol>
+
+<form method="post" action="/industry/projects/new" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="form_token" value="{{ token }}">
+
+  <section class="card" aria-labelledby="details-heading">
+    <h2 class="card__title" id="details-heading">Challenge details</h2>
+
+    <div class="field" style="margin-top:24px">
+      <label class="field__label" for="title">Title<span class="field__req" aria-hidden="true">*</span></label>
+      <input class="input" type="text" id="title" name="title" required maxlength="200"
+             value="{{ form.get('title', '') }}"
+             {% if errors.get('title') %}aria-invalid="true"{% endif %}>
+      {{ field_errors(errors, 'title') }}
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="description">Brief</label>
+      <textarea class="textarea" id="description" name="description" rows="5"
+                data-counter="description-count" maxlength="4000">{{ form.get('description', '') }}</textarea>
+      <span class="counter" id="description-count">0 / 4000</span>
+      <span class="field__help">What the organisation needs, in plain language. Students read this.</span>
+    </div>
+
+    <div class="grid grid--3">
+      <div class="field">
+        <label class="field__label" for="domain">Domain</label>
+        <input class="input" type="text" id="domain" name="domain" maxlength="60"
+               value="{{ form.get('domain', '') }}" placeholder="Energy, data, security">
+      </div>
+      <div class="field">
+        <label class="field__label" for="difficulty">Difficulty</label>
+        <select class="select" id="difficulty" name="difficulty">
+          {% for level, label in [(1,'1 — Introductory'),(2,'2 — Guided'),(3,'3 — Substantial'),(4,'4 — Advanced'),(5,'5 — Expert')] %}
+          <option value="{{ level }}" {% if form.get('difficulty', '3')|string == level|string %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        {{ field_errors(errors, 'difficulty') }}
+      </div>
+      <div class="field">
+        <label class="field__label" for="visibility">Visibility</label>
+        <select class="select" id="visibility" name="visibility">
+          <option value="private" {% if form.get('visibility') == 'private' %}selected{% endif %}>Private — your organisation and administrators</option>
+          <option value="university" {% if form.get('visibility') == 'university' %}selected{% endif %}>Institution only</option>
+          <option value="public" {% if form.get('visibility') == 'public' %}selected{% endif %}>Public to signed-in students</option>
+        </select>
+        {{ field_errors(errors, 'visibility') }}
+      </div>
+    </div>
+
+    <div class="grid grid--3">
+      <div class="field">
+        <label class="field__label" for="team_size_min">Minimum team size</label>
+        <input class="input" type="number" id="team_size_min" name="team_size_min" min="1" max="20"
+               value="{{ form.get('team_size_min', '2') }}">
+        {{ field_errors(errors, 'team_size_min') }}
+      </div>
+      <div class="field">
+        <label class="field__label" for="team_size_max">Maximum team size</label>
+        <input class="input" type="number" id="team_size_max" name="team_size_max" min="1" max="20"
+               value="{{ form.get('team_size_max', '4') }}">
+        {{ field_errors(errors, 'team_size_max') }}
+      </div>
+      <div class="field">
+        <label class="field__label" for="deadline">Deadline</label>
+        <input class="input" type="date" id="deadline" name="deadline"
+               value="{{ form.get('deadline', '') }}">
+        {{ field_errors(errors, 'deadline') }}
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="start_date">Start date</label>
+      <input class="input" type="date" id="start_date" name="start_date"
+             value="{{ form.get('start_date', '') }}">
+      {{ field_errors(errors, 'start_date') }}
+    </div>
+
+    <div class="grid grid--2">
+      <div class="field">
+        <label class="field__label" for="deliverables_summary">Deliverables</label>
+        <textarea class="textarea" id="deliverables_summary" name="deliverables_summary" rows="3">{{ form.get('deliverables_summary', '') }}</textarea>
+      </div>
+      <div class="field">
+        <label class="field__label" for="evaluation_criteria">Evaluation criteria</label>
+        <textarea class="textarea" id="evaluation_criteria" name="evaluation_criteria" rows="3">{{ form.get('evaluation_criteria', '') }}</textarea>
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:0">
+      <label class="field__label" for="eligibility_note">Eligibility rules</label>
+      <input class="input" type="text" id="eligibility_note" name="eligibility_note" maxlength="300"
+             value="{{ form.get('eligibility_note', '') }}"
+             placeholder="For example: available for 10 hours a week from March">
+      <span class="field__help">Checked as a hard constraint before any score.</span>
+    </div>
+  </section>
+
+  <section class="card" style="margin-top:24px" aria-labelledby="requirements-heading">
+    <div class="card__head">
+      <div>
+        <h2 class="card__title" id="requirements-heading">Required skills</h2>
+        <p class="card__sub">
+          Mandatory requirements are pass/fail and are checked before any score. Optional ones
+          contribute weight only.
+        </p>
+      </div>
+      <button class="btn btn--secondary btn--sm" type="button" data-add-requirement>
+        {{ icon("plus", "btn__icon") }} Add requirement
+      </button>
+    </div>
+
+    {% if errors.get('requirements') %}
+      <div class="banner banner--risk" role="alert">
+        <svg class="banner__icon" aria-hidden="true"><use href="#i-alert-octagon"></use></svg>
+        <div><p class="banner__text">{{ errors.get('requirements')[0] }}</p></div>
+      </div>
+    {% endif %}
+
+    <div id="requirement-rows">
+      {% for row in rows %}
+      <div data-requirement-row class="req-row">
+        <div class="field">
+          <label class="field__label" for="skill_id_{{ loop.index0 }}">Skill</label>
+          <select class="select" id="skill_id_{{ loop.index0 }}" name="skill_id">
+            <option value="">Choose a skill</option>
+            {% for skill in registry.items %}
+            <option value="{{ skill.id }}" {% if row.skill_id|string == skill.id|string %}selected{% endif %}>{{ skill.canonical_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field__label" for="level_{{ loop.index0 }}">Required level</label>
+          <select class="select" id="level_{{ loop.index0 }}" name="required_level">
+            {% for level, label in [(1,'1 — Awareness'),(2,'2 — Assisted'),(3,'3 — Independent'),(4,'4 — Advanced'),(5,'5 — Expert')] %}
+            <option value="{{ level }}" {% if row.required_level|string == level|string %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field__label" for="weight_{{ loop.index0 }}">Importance</label>
+          <input class="input" type="number" id="weight_{{ loop.index0 }}" name="weight"
+                 min="1" max="9" step="1" value="{{ row.weight }}">
+        </div>
+        <div class="field">
+          <label class="field__label" for="mandatory_{{ loop.index0 }}">Mandatory</label>
+          <select class="select" id="mandatory_{{ loop.index0 }}" name="mandatory">
+            <option value="yes" {% if row.mandatory == 'yes' %}selected{% endif %}>Yes — pass/fail</option>
+            <option value="no" {% if row.mandatory != 'yes' %}selected{% endif %}>No — weighted only</option>
+          </select>
+        </div>
+        <div class="field" style="align-self:end">
+          <button class="btn btn--quiet btn--sm" type="button" data-remove-requirement
+                  aria-label="Remove this requirement">Remove</button>
+        </div>
+      </div>
+      {% if errors.get('requirement_' ~ loop.index0) %}
+      <p class="field__error" style="margin:-8px 0 16px">
+        {{ icon("alert-octagon", "btn__icon") }}{{ errors.get('requirement_' ~ loop.index0)[0] }}
+      </p>
+      {% endif %}
+      {% endfor %}
+    </div>
+
+    <p class="field__help" style="margin-top:8px">
+      Importance values are relative: 3 and 1 become 75% and 25%. At least one requirement is
+      needed, and every required level must be 1–5.
+    </p>
+  </section>
+
+  <div class="cluster" style="margin-top:24px">
+    <button class="btn btn--primary" type="submit">Save as draft</button>
+    <a class="btn btn--quiet" href="/industry">Cancel</a>
+  </div>
+  <p class="small muted" style="margin-top:12px">
+    Saving creates version 1 of the requirement set. Nothing is matched until an administrator
+    approves it and it is opened.
+  </p>
+</form>
+
+<template id="requirement-row-template">
+  <div data-requirement-row class="req-row">
+    <div class="field">
+      <label class="field__label">Skill</label>
+      <select class="select" name="skill_id">
+        <option value="">Choose a skill</option>
+        {% for skill in registry.items %}
+        <option value="{{ skill.id }}">{{ skill.canonical_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label class="field__label">Required level</label>
+      <select class="select" name="required_level">
+        <option value="1">1 — Awareness</option>
+        <option value="2">2 — Assisted</option>
+        <option value="3" selected>3 — Independent</option>
+        <option value="4">4 — Advanced</option>
+        <option value="5">5 — Expert</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="field__label">Importance</label>
+      <input class="input" type="number" name="weight" min="1" max="9" step="1" value="3">
+    </div>
+    <div class="field">
+      <label class="field__label">Mandatory</label>
+      <select class="select" name="mandatory">
+        <option value="yes">Yes — pass/fail</option>
+        <option value="no">No — weighted only</option>
+      </select>
+    </div>
+    <div class="field" style="align-self:end">
+      <button class="btn btn--quiet btn--sm" type="button" data-remove-requirement>Remove</button>
+    </div>
+  </div>
+</template>
+{% endblock %}
+
+{% block styles %}
+<style>
+  .req-row {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1.3fr) minmax(0, 0.9fr) minmax(0, 1.3fr) auto;
+    gap: 12px;
+    align-items: start;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    margin-top: 16px;
+  }
+  @media (max-width: 900px) {
+    .req-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  }
+</style>
+{% endblock %}

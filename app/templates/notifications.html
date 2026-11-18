@@ -1,0 +1,56 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, empty %}
+{% block title %}Notifications — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Inbox</p>
+  <h1 class="page-head__title">Notifications</h1>
+  <p class="page-head__sub">
+    Rule-generated updates for your account. Confidential material is never copied here; each link
+    applies its own permission check.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+<div class="table-toolbar">
+  <p class="small muted" style="margin:0">{{ unread }} unread of {{ rows|length }} shown.</p>
+  {% if unread %}
+  <form method="post" action="/notifications/read-all">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="btn btn--secondary btn--sm" type="submit">Mark all as read</button>
+  </form>
+  {% endif %}
+</div>
+
+{% if rows %}
+<ul class="stack" style="list-style:none;padding:0;margin:0;max-width:none">
+  {% for row in rows %}
+  <li class="card" style="margin-top:0{% if row.read_at %};opacity:.75{% endif %}">
+    <div class="split" style="align-items:flex-start">
+      <div style="max-width:60ch">
+        <div class="cluster" style="margin-bottom:6px">
+          {% if row.read_at %}{{ chip("Read", "unknown", "check") }}{% else %}{{ chip("Unread", "info", "bell") }}{% endif %}
+          <span class="small muted">{{ row.created_at|dtfmt }}</span>
+        </div>
+        <p style="margin:0 0 4px;font-weight:600">{{ row.title }}</p>
+        <p class="small muted" style="margin:0">{{ row.body }}</p>
+        {% if row.href %}
+        <p style="margin:12px 0 0"><a class="btn btn--quiet btn--sm" href="{{ row.href }}">Open {{ icon("arrow-right", "btn__icon") }}</a></p>
+        {% endif %}
+      </div>
+      {% if not row.read_at %}
+      <form method="post" action="/notifications/{{ row.id }}/read">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn--quiet btn--sm" type="submit">Mark read</button>
+      </form>
+      {% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+  {{ empty("Nothing waiting", "Actions on your records notify you here. No e-mail is sent from the demo.", "", "", "bell") }}
+{% endif %}
+{% endblock %}

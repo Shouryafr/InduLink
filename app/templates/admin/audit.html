@@ -1,0 +1,64 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, empty %}
+{% block title %}Audit log — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Assurance</p>
+  <h1 class="page-head__title">Audit log</h1>
+  <p class="page-head__sub">
+    Append-only. The application refuses to update or delete a row, and database triggers refuse it
+    too — including from raw SQL.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+<form method="get" action="/admin/audit" class="table-toolbar" role="search">
+  <label class="visually-hidden" for="audit-q">Filter the audit log</label>
+  <input class="input" type="search" id="audit-q" name="q" value="{{ query }}"
+         placeholder="Filter by action, target or reason" style="max-width:320px">
+  <button class="btn btn--secondary btn--sm" type="submit">Filter</button>
+  {% if query %}<a class="btn btn--quiet btn--sm" href="/admin/audit">Clear</a>{% endif %}
+</form>
+
+{% if events %}
+<div class="table-wrap">
+  <table class="data">
+    <caption class="visually-hidden">Audit events, newest first{{ ' (filtered)' if query }}</caption>
+    <thead>
+      <tr>
+        <th scope="col">When</th>
+        <th scope="col">Actor</th>
+        <th scope="col">Action</th>
+        <th scope="col">Target</th>
+        <th scope="col">Change</th>
+        <th scope="col">Reason</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for event in events %}
+      <tr>
+        <td class="small muted num">{{ event.at|dtfmt }}</td>
+        <td class="small">
+          {% if event.actor_id %}User {{ event.actor_id }}{% else %}Anonymous{% endif %}
+          <span class="muted" style="display:block">{{ event.actor_role }}</span>
+        </td>
+        <td><code class="small">{{ event.action }}</code></td>
+        <td class="small muted">
+          {% if event.target_type %}{{ event.target_type }}{% if event.target_id %}:{{ event.target_id }}{% endif %}{% else %}—{% endif %}
+        </td>
+        <td class="small muted">
+          {% if event.before_ref or event.after_ref %}{{ event.before_ref or '—' }} → {{ event.after_ref or '—' }}{% else %}—{% endif %}
+        </td>
+        <td class="small muted">{{ event.reason or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="small muted" style="margin-top:12px">{{ events|length }} event(s) shown, newest first.</p>
+{% else %}
+  {{ empty("No audit events", "Sign-ins, denials and record changes appear here as they happen.", "", "", "shield") }}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty %}
+{% block title %}Skill passport — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Outcomes</p>
+  <h1 class="page-head__title">Skill passport</h1>
+  <p class="page-head__sub">
+    Project-scoped records of confirmed work. A passport describes verified scope; it is not a
+    certification, a guarantee of ability or a prediction of performance.
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+{% if saved == 'created' %}{{ banner("Passport entry created", "It is unpublished until you choose to share it.", "ok") }}{% endif %}
+{% if saved == 'published' %}{{ banner("Passport updated", "The change is recorded in the audit log.", "ok") }}{% endif %}
+{% if error %}{{ banner("That passport change did not save", error, "risk") }}{% endif %}
+
+<div class="grid grid--split">
+  <section class="card" aria-labelledby="passports-heading">
+    <div class="card__head">
+      <div>
+        <h2 class="card__title" id="passports-heading">Your entries</h2>
+        <p class="card__sub">Only a confirmed team place can produce an entry. Publishing is your choice.</p>
+      </div>
+    </div>
+
+    {% if entries %}
+    <ul class="stack" style="list-style:none;padding:0;margin:0;max-width:none">
+      {% for entry in entries %}
+      <li style="border-top:1px solid var(--line);padding-top:16px">
+        <div class="split" style="align-items:flex-start">
+          <div style="max-width:56ch">
+            <div class="cluster" style="margin-bottom:6px">
+              {% if entry.publication_state == 'approved' %}
+                {{ status_chip("Published", "ok") }}
+              {% else %}
+                {{ status_chip("Private draft", "unknown") }}
+              {% endif %}
+              {{ chip(entry.project.title if entry.project else "Project", "", "briefcase") }}
+            </div>
+            <p style="margin:0 0 4px;font-weight:600">{{ entry.role or 'Contributor' }}</p>
+            <p class="small muted" style="margin:0">{{ entry.verified_scope or 'No verified scope recorded yet.' }}</p>
+            <p class="small muted" style="margin:6px 0 0">
+              {{ entry.technologies|join(', ') if entry.technologies else 'No technologies listed' }} ·
+              {{ entry.competencies|length }} competenc{{ 'y' if entry.competencies|length == 1 else 'ies' }}
+            </p>
+            <div class="cluster" style="margin-top:12px">
+              <form method="post" action="/student/passport/{{ entry.id }}/publication">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="publish" value="{{ 'no' if entry.publication_state == 'approved' else 'yes' }}">
+                <button class="btn btn--quiet btn--sm" type="submit">
+                  {{ "Make private" if entry.publication_state == 'approved' else "Publish" }}
+                </button>
+              </form>
+              <a class="btn btn--secondary btn--sm" href="/student/passport/{{ entry.id }}/export" download>
+                {{ icon("file-text", "btn__icon") }} Export JSON
+              </a>
+            </div>
+          </div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+      {{ empty("No passport entries yet", "A confirmed team place is required before an entry can be created.", "/student/projects", "See your challenges", "award") }}
+    {% endif %}
+  </section>
+
+  <aside class="stack-lg">
+    <section class="card">
+      <h2 class="card__title">Create an entry</h2>
+      {% if eligible %}
+      <form method="post" action="/student/passport" style="margin-top:16px">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="field">
+          <label class="field__label" for="project_id">Project</label>
+          <select class="select" id="project_id" name="project_id" required>
+            {% for project in eligible %}
+            <option value="{{ project.id }}">{{ project.title }}</option>
+            {% endfor %}
+          </select>
+          <span class="field__help">Only projects where your team place is confirmed appear here.</span>
+        </div>
+        <div class="field">
+          <label class="field__label" for="role">Your role</label>
+          <input class="input" type="text" id="role" name="role" maxlength="80" placeholder="Backend, data analysis, documentation">
+        </div>
+        <div class="field">
+          <label class="field__label" for="technologies">Technologies</label>
+          <input class="input" type="text" id="technologies" name="technologies" placeholder="Python, SQL, data visualisation">
+          <span class="field__help">Comma separated, up to eight.</span>
+        </div>
+        <div class="field">
+          <label class="field__label" for="competencies">Competencies</label>
+          <textarea class="textarea" id="competencies" name="competencies" rows="3" placeholder="Delivered a scoped task against a written brief"></textarea>
+          <span class="field__help">One per line.</span>
+        </div>
+        <div class="field">
+          <label class="field__label" for="verified_scope">Verified scope</label>
+          <textarea class="textarea" id="verified_scope" name="verified_scope" rows="3" placeholder="What the mentor confirmed about your work"></textarea>
+          <span class="field__help">Required before publishing.</span>
+        </div>
+        <button class="btn btn--primary btn--sm" type="submit">Create draft entry</button>
+      </form>
+      {% else %}
+        <p class="small muted" style="margin-top:12px">
+          You have no confirmed team place without an entry yet. Once a partner confirms a team,
+          the project appears here.
+        </p>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h2 class="card__title">What a passport does not claim</h2>
+      <ul class="small stack-sm" style="margin:12px 0 0;padding-left:18px">
+        <li>It is not a certification or a formal credential.</li>
+        <li>It does not predict performance on a future project.</li>
+        <li>It only describes the scope a reviewer confirmed for one project.</li>
+        <li>Unpublished entries are visible to you and administrators only.</li>
+      </ul>
+    </section>
+  </aside>
+</div>
+{% endblock %}

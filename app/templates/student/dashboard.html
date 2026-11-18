@@ -1,0 +1,144 @@
+{% extends "layouts/app.html" %}
+{% from "components/macros.html" import icon, chip, status_chip, banner, empty, freshness, skill_assessment_row %}
+{% block title %}Overview — InduLink{% endblock %}
+
+{% block head %}
+<div class="page-head">
+  <p class="eyebrow">Student workspace</p>
+  <h1 class="page-head__title">{{ user.display_name or 'Your workspace' }}</h1>
+  <p class="page-head__sub">
+    What you can act on now, and what your evidence currently supports.
+    {% if profile.headline %}{{ profile.headline }}{% endif %}
+  </p>
+</div>
+{% endblock %}
+
+{% block page %}
+<div class="grid grid--4" style="margin-bottom:32px">
+  <div class="card">
+    <p class="score__label">Confirmed skills</p>
+    <p class="figure figure--md">{{ counts.verified + counts.reviewed }}</p>
+    <p class="small muted" style="margin:8px 0 0">Backed by reviewed or verified evidence.</p>
+  </div>
+  <div class="card">
+    <p class="score__label">Provisional</p>
+    <p class="figure figure--md" style="color:var(--warn)">{{ counts.provisional }}</p>
+    <p class="small muted" style="margin:8px 0 0">Declared only. Cannot satisfy a mandatory requirement alone.</p>
+  </div>
+  <div class="card">
+    <p class="score__label">No data</p>
+    <p class="figure figure--md">{{ counts.unknown }}</p>
+    <p class="small muted" style="margin:8px 0 0">Shown as no data, never as zero.</p>
+  </div>
+  <div class="card">
+    <p class="score__label">Evidence items</p>
+    <p class="figure figure--md">{{ evidence_count }}</p>
+    <p class="small muted" style="margin:8px 0 0">{{ pending_count }} awaiting review.</p>
+  </div>
+</div>
+
+<div class="cluster" style="margin-bottom:24px">
+  <a class="btn btn--secondary btn--sm" href="/student/projects">Browse challenges</a>
+  <a class="btn btn--quiet btn--sm" href="/student/passport">Skill passport</a>
+  <a class="btn btn--quiet btn--sm" href="/notifications">Notifications{% if unread_notifications %} ({{ unread_notifications }} unread){% endif %}</a>
+</div>
+
+<div class="grid grid--split">
+  <section class="card" aria-labelledby="actions-heading">
+    <div class="card__head">
+      <div>
+        <h2 class="card__title" id="actions-heading">Next best actions</h2>
+        <p class="card__sub">Deterministic suggestions from your current record. Each states its reason.</p>
+      </div>
+    </div>
+
+    {% if actions %}
+    <ul class="stack" style="list-style:none;padding:0;margin:0;max-width:none">
+      {% for action in actions %}
+      <li style="border-top:1px solid var(--line);padding-top:16px;margin-top:0">
+        <div class="split" style="align-items:flex-start">
+          <div style="max-width:52ch">
+            <p style="margin:0 0 4px;font-weight:600">{{ action.title }}</p>
+            <p class="small muted" style="margin:0">{{ action.body }}</p>
+          </div>
+          <a class="btn btn--secondary btn--sm" href="{{ action.href }}">{{ action.cta }}</a>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+      {{ empty("Nothing waiting", "Your profile, availability and evidence are all current.", "/student/profile", "Review your profile", "check-circle") }}
+    {% endif %}
+  </section>
+
+  <aside class="stack-lg">
+    <section class="card">
+      <h2 class="card__title">Availability</h2>
+      <p class="card__sub">Matching checks this before any score.</p>
+      <p class="figure figure--md" style="margin:16px 0 4px">
+        {{ profile.availability_hours if profile.availability_hours is not none else '—' }}<span class="small muted" style="font-family:var(--font-ui);font-size:var(--fs-14)"> hrs / week</span>
+      </p>
+      {% if profile.availability_from and profile.availability_to %}
+        <p class="small muted" style="margin:0 0 12px">
+          {{ profile.availability_from|datefmt }} – {{ profile.availability_to|datefmt }}
+        </p>
+      {% endif %}
+      {{ freshness(availability) }}
+      <p style="margin:16px 0 0"><a class="btn btn--secondary btn--sm" href="/student/profile#availability">Update availability</a></p>
+    </section>
+
+    <section class="card">
+      <h2 class="card__title">Profile visibility</h2>
+      <p class="card__sub">Private by default. You choose what others can see.</p>
+      <p style="margin:16px 0 0">
+        {% if profile.visibility == 'public' %}
+          {{ chip("Public to signed-in users", "info", "users") }}
+        {% elif profile.visibility == 'university' %}
+          {{ chip("Visible within your institution", "warn", "users") }}
+        {% else %}
+          {{ chip("Private", "unknown", "lock") }}
+        {% endif %}
+      </p>
+      <p style="margin:16px 0 0"><a class="btn btn--quiet btn--sm" href="/student/profile">Change visibility</a></p>
+    </section>
+  </aside>
+</div>
+
+<section class="card" style="margin-top:24px" aria-labelledby="skills-heading">
+  <div class="card__head">
+    <div>
+      <h2 class="card__title" id="skills-heading">Your skills, as six separate fields</h2>
+      <p class="card__sub">Declared, assessed, provisional, evidence status, item count and the detail behind each row.</p>
+    </div>
+    <a class="btn btn--quiet btn--sm" href="/student/evidence">Submit evidence</a>
+  </div>
+
+  {% if views %}
+  <div class="table-wrap">
+    <table class="data">
+      <caption class="visually-hidden">Your skills with declared, assessed and provisional levels</caption>
+      <thead>
+        <tr>
+          <th scope="col">Skill</th>
+          <th scope="col" class="num">Declared</th>
+          <th scope="col" class="num">Assessed</th>
+          <th scope="col" class="num">Provisional</th>
+          <th scope="col">Evidence status</th>
+          <th scope="col" class="num">Items</th>
+          <th scope="col">Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for view in views %}{{ skill_assessment_row(view) }}{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted" style="margin-top:12px">
+    Assessed levels come only from reviewed or verified evidence. A provisional level never counts
+    toward a mandatory requirement on its own.
+  </p>
+  {% else %}
+    {{ empty("No skills yet", "Add skills from the canonical registry so project requirements can be matched against them.", "/student/profile", "Add your first skill", "book") }}
+  {% endif %}
+</section>
+{% endblock %}
