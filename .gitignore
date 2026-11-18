@@ -14,3 +14,4 @@ htmlcov/
 
 # Local SQLite database (WAL side files included) — seed it with `make seed`.
 var/
+.freebuff/
